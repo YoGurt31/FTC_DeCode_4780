@@ -3,7 +3,6 @@ package TeleOp;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -15,8 +14,8 @@ import Systems.Robot;
 
 /**
  * Title: TeleOpBasic - Designed for FTC Decode 2025-26
- * Desc: Basic TeleOp for a 4-Motor Mecanum DriveTrain
- * Includes Driving, Strafing, and Rotating
+ * Desc: Basic TeleOp for a 4-Motor Tank DriveTrain
+ * Includes Driving and Rotating
  *
  * Controls (GamePad1):
  * - Left Analog X:      N/A
@@ -50,10 +49,11 @@ public class TeleOpBasic extends LinearOpMode {
     private boolean flyWheelOn = false;
     private static final double targetRPS = 25.0;
     private static final double TicksPerRev = 4000; // FlyWheel ELC Encoder Resolution
-    private double artifactHold = 1.0;
-    private double artifactRelease = 0.0;
+    private final double artifactHold = 1.0;
+    private final double artifactRelease = 0.0;
 
     // AprilTag / Vision Variables
+    // TODO: Tune Values
     final double distance = 12.0; // Distance To Reach From AprilTag (In Inches)
 
     final double driveGain  =  0.020;
@@ -61,8 +61,6 @@ public class TeleOpBasic extends LinearOpMode {
 
     final double maxDrive  = 0.50;
     final double maxRotate = 0.25;
-
-
 
     @Override
     public void runOpMode() {
