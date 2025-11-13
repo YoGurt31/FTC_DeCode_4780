@@ -15,7 +15,6 @@ import Systems.Robot;
  * Desc: Basic Auton for a 4-Motor Tank DriveTrain
  *
  * @Author Gurej Singh
- * @Version 1.0
  */
 
 @Autonomous(name = "BasicMotif", group = "Auton")

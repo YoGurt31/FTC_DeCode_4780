@@ -32,7 +32,6 @@ import Systems.Robot;
  * - FaceButton Right:   Returns Function
  *
  * @Author Gurej Singh
- * @Version 1.0
  */
 
 @TeleOp(name = "Tank", group = "TeleOp")
@@ -44,19 +43,14 @@ public class TeleOpBasic extends LinearOpMode {
     // FlyWheel Variables
     private boolean flyWheelOn = false;
     private static final double targetRPS = 25.0;
-    private static final double TicksPerRev = 4000; // FlyWheel ELC Encoder Resolution
+    private static final double TicksPerRev = 4000.0; // FlyWheel ELC Encoder Resolution
     private final double artifactHold = 1.0;
     private final double artifactRelease = 0.0;
 
     // AprilTag / Vision Variables
     // TODO: Tune Values
-    final double desiredRange = 0.0; // TY VALUE READ @ SPECIFIC POSITION - For 24 In, Read TY Value When Robot Is 24 In From Target
-
-    final double driveGain  =  0.020;
-    final double rotateGain =  0.010;
-
-    final double maxDrive  = 0.50;
-    final double maxRotate = 0.25;
+    private static final double rotateGain = 0.010;
+    private static final double maxRotate = 0.25;
 
     @Override
     public void runOpMode() {
@@ -85,14 +79,12 @@ public class TeleOpBasic extends LinearOpMode {
             boolean hasTarget = result != null && result.isValid();
 
             if (activeTargeting && hasTarget) {
-                double rangeError    = result.getTy() - desiredRange;
                 double headingError  = result.getTx();
 
-                drive  = Range.clip(rangeError * driveGain, -maxDrive, maxDrive);
+                drive  = -gamepad1.right_stick_y;
                 rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
 
                 telemetry.addData("Limelight", "Tracking");
-                telemetry.addData("Range Error", result.getTy());
                 telemetry.addData("Heading Error", result.getTx());
                 telemetry.addData("Auto","Drive %5.2f, Turn %5.2f ", drive, rotate);
             } else {

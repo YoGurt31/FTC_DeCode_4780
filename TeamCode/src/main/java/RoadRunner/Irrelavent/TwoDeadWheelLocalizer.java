@@ -1,4 +1,4 @@
-package RoadRunner;
+package RoadRunner.Irrelavent;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.DualNum;
@@ -22,6 +22,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+
+import RoadRunner.Localizer;
 import RoadRunner.messages.TwoDeadWheelInputsMessage;
 
 @Config

@@ -40,12 +40,12 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 import org.firstinspires.ftc.robotcore.internal.opmode.OpModeMeta;
-import RoadRunner.MecanumDrive;
-import RoadRunner.OTOSLocalizer;
+import RoadRunner.Irrelavent.MecanumDrive;
+import RoadRunner.Irrelavent.OTOSLocalizer;
 import RoadRunner.PinpointLocalizer;
 import RoadRunner.TankDrive;
-import RoadRunner.ThreeDeadWheelLocalizer;
-import RoadRunner.TwoDeadWheelLocalizer;
+import RoadRunner.Irrelavent.ThreeDeadWheelLocalizer;
+import RoadRunner.Irrelavent.TwoDeadWheelLocalizer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
