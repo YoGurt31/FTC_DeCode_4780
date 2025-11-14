@@ -42,10 +42,13 @@ public class TeleOpBasic extends LinearOpMode {
 
     // FlyWheel Variables
     private boolean flyWheelOn = false;
-    private static final double targetRPS = 25.0;
+    private static final double targetRPS = 25;
     private static final double TicksPerRev = 4000.0; // FlyWheel ELC Encoder Resolution
-    private final double artifactHold = 1.0;
-    private final double artifactRelease = 0.0;
+    private final double artifactHoldRight = 1.0;
+    private final double artifactHoldLeft = 0.0;
+    private final double artifactReleaseRight = 0.8;
+    private final double artifactReleaseLeft = 0.2;
+
 
     // AprilTag / Vision Variables
     // TODO: Tune Values
@@ -88,8 +91,8 @@ public class TeleOpBasic extends LinearOpMode {
                 telemetry.addData("Heading Error", result.getTx());
                 telemetry.addData("Auto","Drive %5.2f, Turn %5.2f ", drive, rotate);
             } else {
-                drive  = -gamepad1.right_stick_y;
-                rotate = -gamepad1.left_stick_x;
+                drive  = -gamepad1.left_stick_y;
+                rotate = gamepad1.right_stick_x;
 
                 telemetry.addData("Limelight", hasTarget ? "Target in View" : "No Target");
                 telemetry.addData("Manual","Drive %5.2f, Turn %5.2f ", drive, rotate);
@@ -118,7 +121,7 @@ public class TeleOpBasic extends LinearOpMode {
             }
 
             // FlyWheel Control
-            double measuredFlywheelRps = (robot.scoringMechanisms.flyWheel1.getVelocity() / TicksPerRev);
+            double measuredFlywheelRps = (robot.scoringMechanisms.flyWheel2.getVelocity()/TicksPerRev); //
 
             if (gamepad1.left_trigger >= 0.05 || gamepad1.right_trigger >= 0.05) {
                 robot.scoringMechanisms.flyWheel1.setVelocity(targetRPS * TicksPerRev);
@@ -126,33 +129,33 @@ public class TeleOpBasic extends LinearOpMode {
             } else {
                 robot.scoringMechanisms.flyWheel1.setPower(0);
                 robot.scoringMechanisms.flyWheel2.setPower(0);
-                robot.scoringMechanisms.leftRelease.setPosition(artifactHold);
-                robot.scoringMechanisms.rightRelease.setPosition(artifactHold);
+                robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
+                robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
             }
 
             if (gamepad1.left_trigger >= 0.05) {
                 if (measuredFlywheelRps >= targetRPS - 0.5) {
-                    robot.scoringMechanisms.leftRelease.setPosition(artifactRelease);
+                    robot.scoringMechanisms.leftRelease.setPosition(artifactReleaseLeft);
                 } else {
-                    robot.scoringMechanisms.leftRelease.setPosition(artifactHold);
+                    robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
                 }
             } else {
-                robot.scoringMechanisms.leftRelease.setPosition(artifactHold);
+                robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
             }
 
             if (gamepad1.right_trigger >= 0.05) {
                 if (measuredFlywheelRps >= targetRPS - 0.5) {
-                    robot.scoringMechanisms.rightRelease.setPosition(artifactRelease);
+                    robot.scoringMechanisms.rightRelease.setPosition(artifactReleaseRight);
                 } else {
-                    robot.scoringMechanisms.rightRelease.setPosition(artifactHold);
+                    robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
                 }
             } else {
-                robot.scoringMechanisms.rightRelease.setPosition(artifactHold);
+                robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
             }
 
             telemetry.addData("Flywheel RPS (Measured)", measuredFlywheelRps);
             telemetry.addData("Flywheel RPS (Target)", targetRPS);
-            telemetry.addData("Left Release", ((robot.scoringMechanisms.leftRelease.getPosition()  <= 0.05) ? "Open" : "Closed"));
+            telemetry.addData("Left Release", ((robot.scoringMechanisms.leftRelease.getPosition()  >= 0.05) ? "Open" : "Closed"));
             telemetry.addData("Right Release", ((robot.scoringMechanisms.rightRelease.getPosition()  <= 0.05) ? "Open" : "Closed"));
 
             telemetry.update();
