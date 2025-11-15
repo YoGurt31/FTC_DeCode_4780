@@ -100,6 +100,73 @@ public class Robot {
             backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
             backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         }
+
+        public void driveStraight(LinearOpMode opMode, double distanceInches, double maxPower) {
+            pinPoint.resetPosAndIMU();
+            pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
+
+            double direction = Math.signum(distanceInches);
+            double target = Math.abs(distanceInches);
+
+            // TODO: Tune Values
+            final double kP_drive = 0.05;
+            final double kP_turn  = 0.01;
+
+            while (opMode.opModeIsActive()) {
+                pinPoint.update();
+                Pose2D pose = pinPoint.getPosition();
+
+                double x = pose.getX(DistanceUnit.INCH);
+                double y = pose.getY(DistanceUnit.INCH);
+                double headingDeg = pose.getHeading(AngleUnit.DEGREES);
+
+                double travelled = Math.hypot(x, y);
+                double remaining = target - travelled;
+
+                if (remaining <= 0.5) break;
+
+                double driveCmd = Range.clip(remaining * kP_drive * direction, -maxPower, maxPower);
+
+                double headingError = normalizeAngle(0.0 - headingDeg);
+                double rotateCmd = Range.clip(headingError * kP_turn, -0.3, 0.3);
+
+                tankDrive(driveCmd, rotateCmd);
+                opMode.idle();
+            }
+
+            tankDrive(0, 0);
+        }
+
+        public void turnToHeading(LinearOpMode opMode, double targetHeadingDeg, double maxTurnPower) {
+            final double kP_turn = 0.01;
+
+            while (opMode.opModeIsActive()) {
+                pinPoint.update();
+                double headingDeg = pinPoint.getHeading(AngleUnit.DEGREES);
+                double error = normalizeAngle(targetHeadingDeg - headingDeg);
+
+                if (Math.abs(error) <= 1.0) break;
+
+                double rotateCmd = Range.clip(error * kP_turn, -maxTurnPower, maxTurnPower);
+
+                tankDrive(0.0, rotateCmd);
+                opMode.idle();
+            }
+
+            tankDrive(0, 0);
+        }
+
+        public Pose2D getPose() {
+            pinPoint.update();
+            return pinPoint.getPosition();
+        }
+
+        private double normalizeAngle(double angle) {
+            while (angle >= 180.0) angle -= 360.0;
+            while (angle < -180.0) angle += 360.0;
+            return angle;
+        }
+
     }
 
     public class ScoringMechanisms {

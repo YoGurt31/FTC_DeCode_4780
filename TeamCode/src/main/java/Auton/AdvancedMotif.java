@@ -6,6 +6,7 @@ import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.Range;
 
@@ -15,6 +16,7 @@ import RoadRunner.TankDrive;
 import Systems.Robot;
 
 @Autonomous(name = "AdvancedMotif", group = "Auton")
+@Disabled
 public class AdvancedMotif extends LinearOpMode {
 
     private final Robot robot = new Robot();
