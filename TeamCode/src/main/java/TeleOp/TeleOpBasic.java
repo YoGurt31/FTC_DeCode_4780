@@ -4,7 +4,10 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 import Systems.Robot;
 
@@ -12,7 +15,7 @@ import Systems.Robot;
  * Title: TeleOpBasic - Designed for FTC Decode 2025-26
  * Desc: Basic TeleOp for a 4-Motor Tank DriveTrain
  * Includes Driving and Rotating
- *
+ * <p>
  * Controls (GamePad1):
  * - Left Analog X:      N/A
  * - Left Analog Y:      Drives Robot Forward and Backwards
@@ -41,19 +44,21 @@ public class TeleOpBasic extends LinearOpMode {
     private final Robot robot = new Robot();
 
     // FlyWheel Variables
-    private boolean flyWheelOn = false;
-    private static final double targetRPS = 25;
-    private static final double TicksPerRev = 4000.0; // FlyWheel ELC Encoder Resolution
-    private final double artifactHoldRight = 1.0;
+    private static final double targetRPS = 57.5;
+    private static final double TicksPerRev = 28.0; // FlyWheel Encoder Resolution
+    private final double artifactHoldRight = 0.5;
     private final double artifactHoldLeft = 0.0;
-    private final double artifactReleaseRight = 0.8;
-    private final double artifactReleaseLeft = 0.2;
+    private final double artifactReleaseRight = 1.0;
+    private final double artifactReleaseLeft = 0.5;
+    private long leftShotEndTime = 0;
+    private long rightShotEndTime = 0;
+    private long leftGateOpenUntil = 0;
+    private long rightGateOpenUntil = 0;
 
 
     // AprilTag / Vision Variables
-    // TODO: Tune Values
-    private static final double rotateGain = 0.010;
-    private static final double maxRotate = 0.25;
+    private static final double rotateGain = 0.0250;
+    private static final double maxRotate = 0.75;
 
     @Override
     public void runOpMode() {
@@ -64,7 +69,7 @@ public class TeleOpBasic extends LinearOpMode {
         // FtcDashboard.getInstance().startCameraStream(robot.vision.visionPortal, 20);
 
         // Active If Using LimeLight
-         FtcDashboard.getInstance().startCameraStream(robot.vision.limeLight, 30);
+        FtcDashboard.getInstance().startCameraStream(robot.vision.limeLight, 30);
 
         double drive = 0, rotate = 0;
 
@@ -76,26 +81,28 @@ public class TeleOpBasic extends LinearOpMode {
 
         while (opModeIsActive()) {
 
+            long now = System.currentTimeMillis();
+
             // AprilTag Targeting
-            boolean activeTargeting = gamepad1.left_bumper;
+            boolean activeTargeting = gamepad1.left_trigger >= 0.5;
             LLResult result = robot.vision.limeLight.getLatestResult();
             boolean hasTarget = result != null && result.isValid();
 
             if (activeTargeting && hasTarget) {
-                double headingError  = result.getTx();
+                double headingError = result.getTx();
 
-                drive  = -gamepad1.right_stick_y;
+                drive = -gamepad1.left_stick_y;
                 rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
 
                 telemetry.addData("Limelight", "Tracking");
                 telemetry.addData("Heading Error", result.getTx());
-                telemetry.addData("Auto","Drive %5.2f, Turn %5.2f ", drive, rotate);
+                telemetry.addData("Auto", "Drive %5.2f, Turn %5.2f ", drive, rotate);
             } else {
-                drive  = -gamepad1.left_stick_y;
+                drive = -gamepad1.left_stick_y;
                 rotate = gamepad1.right_stick_x;
 
                 telemetry.addData("Limelight", hasTarget ? "Target in View" : "No Target");
-                telemetry.addData("Manual","Drive %5.2f, Turn %5.2f ", drive, rotate);
+                telemetry.addData("Manual", "Drive %5.2f, Turn %5.2f ", drive, rotate);
             }
 
             robot.driveTrain.tankDrive(drive, rotate);
@@ -121,42 +128,61 @@ public class TeleOpBasic extends LinearOpMode {
             }
 
             // FlyWheel Control
-            double measuredFlywheelRps = (robot.scoringMechanisms.flyWheel2.getVelocity()/TicksPerRev); //
+            double measuredFlywheelRps1 = (Math.abs(robot.scoringMechanisms.flyWheel1.getVelocity()) / TicksPerRev);
+            double measuredFlywheelRps2 = (Math.abs(robot.scoringMechanisms.flyWheel2.getVelocity()) / TicksPerRev);
 
-            if (gamepad1.left_trigger >= 0.05 || gamepad1.right_trigger >= 0.05) {
+            if (gamepad1.right_trigger >= 0.05) {
                 robot.scoringMechanisms.flyWheel1.setVelocity(targetRPS * TicksPerRev);
                 robot.scoringMechanisms.flyWheel2.setVelocity(targetRPS * TicksPerRev);
             } else {
                 robot.scoringMechanisms.flyWheel1.setPower(0);
                 robot.scoringMechanisms.flyWheel2.setPower(0);
-                robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
-                robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
             }
 
-            if (gamepad1.left_trigger >= 0.05) {
-                if (measuredFlywheelRps >= targetRPS - 0.5) {
-                    robot.scoringMechanisms.leftRelease.setPosition(artifactReleaseLeft);
+            // Artifact Release Control
+            if (gamepad1.yWasPressed()) {
+                leftGateOpenUntil = now + 250;
+                leftShotEndTime = now + 1500;
+            }
+
+            if (gamepad1.bWasPressed()) {
+                rightGateOpenUntil = now + 250;
+                rightShotEndTime = now + 1500;
+            }
+
+            boolean leftShotActive = now < leftShotEndTime;
+            boolean rightShotActive = now < rightShotEndTime;
+            boolean anyShotActive = leftShotActive || rightShotActive;
+
+            if (anyShotActive) {
+                robot.scoringMechanisms.rollerIntake.setPower(1.0);
+
+                if (leftShotActive && !rightShotActive) {
+                    robot.scoringMechanisms.sorterIntake.setPower(1.0);
+                } else if (rightShotActive && !leftShotActive) {
+                    robot.scoringMechanisms.sorterIntake.setPower(-1.0);
                 } else {
-                    robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
+                    robot.scoringMechanisms.sorterIntake.setPower(0.0);
                 }
+            }
+
+            if (now < leftGateOpenUntil) {
+                robot.scoringMechanisms.leftRelease.setPosition(artifactReleaseLeft);
             } else {
                 robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
             }
 
-            if (gamepad1.right_trigger >= 0.05) {
-                if (measuredFlywheelRps >= targetRPS - 0.5) {
-                    robot.scoringMechanisms.rightRelease.setPosition(artifactReleaseRight);
-                } else {
-                    robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
-                }
+            if (now < rightGateOpenUntil) {
+                robot.scoringMechanisms.rightRelease.setPosition(artifactReleaseRight);
             } else {
                 robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
             }
 
-            telemetry.addData("Flywheel RPS (Measured)", measuredFlywheelRps);
+            telemetry.addData("Flywheel1 Vel", robot.scoringMechanisms.flyWheel1.getVelocity());
+            telemetry.addData("Flywheel2 Vel", robot.scoringMechanisms.flyWheel2.getVelocity());
+            telemetry.addData("Flywheel1 RPS (Measured)", measuredFlywheelRps1);
+            telemetry.addData("Flywheel2 RPS (Measured)", measuredFlywheelRps2);
             telemetry.addData("Flywheel RPS (Target)", targetRPS);
-            telemetry.addData("Left Release", ((robot.scoringMechanisms.leftRelease.getPosition()  >= 0.05) ? "Open" : "Closed"));
-            telemetry.addData("Right Release", ((robot.scoringMechanisms.rightRelease.getPosition()  <= 0.05) ? "Open" : "Closed"));
 
             telemetry.update();
         }

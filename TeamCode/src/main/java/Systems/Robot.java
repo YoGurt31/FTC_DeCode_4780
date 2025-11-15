@@ -100,73 +100,6 @@ public class Robot {
             backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
             backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         }
-
-        public void driveStraight(LinearOpMode opMode, double distanceInches, double maxPower) {
-            pinPoint.resetPosAndIMU();
-            pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
-
-            double direction = Math.signum(distanceInches);
-            double target = Math.abs(distanceInches);
-
-            // TODO: Tune Values
-            final double kP_drive = 0.05;
-            final double kP_turn  = 0.01;
-
-            while (opMode.opModeIsActive()) {
-                pinPoint.update();
-                Pose2D pose = pinPoint.getPosition();
-
-                double x = pose.getX(DistanceUnit.INCH);
-                double y = pose.getY(DistanceUnit.INCH);
-                double headingDeg = pose.getHeading(AngleUnit.DEGREES);
-
-                double travelled = Math.hypot(x, y);
-                double remaining = target - travelled;
-
-                if (remaining <= 0.5) break;
-
-                double driveCmd = Range.clip(remaining * kP_drive * direction, -maxPower, maxPower);
-
-                double headingError = normalizeAngle(0.0 - headingDeg);
-                double rotateCmd = Range.clip(headingError * kP_turn, -0.3, 0.3);
-
-                tankDrive(driveCmd, rotateCmd);
-                opMode.idle();
-            }
-
-            tankDrive(0, 0);
-        }
-
-        public void turnToHeading(LinearOpMode opMode, double targetHeadingDeg, double maxTurnPower) {
-            final double kP_turn = 0.01;
-
-            while (opMode.opModeIsActive()) {
-                pinPoint.update();
-                double headingDeg = pinPoint.getHeading(AngleUnit.DEGREES);
-                double error = normalizeAngle(targetHeadingDeg - headingDeg);
-
-                if (Math.abs(error) <= 1.0) break;
-
-                double rotateCmd = Range.clip(error * kP_turn, -maxTurnPower, maxTurnPower);
-
-                tankDrive(0.0, rotateCmd);
-                opMode.idle();
-            }
-
-            tankDrive(0, 0);
-        }
-
-        public Pose2D getPose() {
-            pinPoint.update();
-            return pinPoint.getPosition();
-        }
-
-        private double normalizeAngle(double angle) {
-            while (angle >= 180.0) angle -= 360.0;
-            while (angle < -180.0) angle += 360.0;
-            return angle;
-        }
-
     }
 
     public class ScoringMechanisms {
@@ -190,29 +123,28 @@ public class Robot {
             sorterIntake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             sorterIntake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-            //  Determine Which Motor Port ELC Encoder Is Connected Too (flywheel2)
+            double P = 50.000;
+            double I = 00.000;
+            double D = 00.000;
+            double F = 15.000;
 
             flyWheel1 = hardwareMap.get(DcMotorEx.class, "fW1");
-            // Tune Direction
-            flyWheel1.setDirection(DcMotorEx.Direction.REVERSE);
+            flyWheel1.setDirection(DcMotorEx.Direction.FORWARD);
             flyWheel1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             flyWheel1.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             flyWheel1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            flyWheel1.setVelocityPIDFCoefficients(P, I, D, F);
 
             flyWheel2 = hardwareMap.get(DcMotorEx.class, "fW2");
-            // Tune Direction
-            flyWheel2.setDirection(DcMotorEx.Direction.FORWARD);
+            flyWheel2.setDirection(DcMotorEx.Direction.REVERSE);
             flyWheel2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             flyWheel2.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             flyWheel2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            flyWheel2.setVelocityPIDFCoefficients(P, I, D, F);
 
             //  Tune Directions
             leftRelease = hardwareMap.get(Servo.class, "lR");
-            leftRelease.setPosition(0.0);
-            leftRelease.setDirection(Servo.Direction.FORWARD);
             rightRelease = hardwareMap.get(Servo.class, "rR");
-            rightRelease.setPosition(0.0);
-            rightRelease.setDirection(Servo.Direction.REVERSE);
         }
     }
 
@@ -223,7 +155,6 @@ public class Robot {
             limeLight = hardwareMap.get(Limelight3A.class, "limelight");
             limeLight.pipelineSwitch(0);
             limeLight.start();
-
         }
     }
 
