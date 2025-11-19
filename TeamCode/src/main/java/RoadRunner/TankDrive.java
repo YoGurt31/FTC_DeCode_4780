@@ -153,9 +153,8 @@ public final class TankDrive {
             }
 
             // TODO: reverse encoder directions if needed
-//            leftEncs.get(0).setDirection(DcMotorSimple.Direction.REVERSE);
-//            rightEncs.get(0).setDirection(DcMotorSimple.Direction.REVERSE);
-
+            //  leftEncs.get(0).setDirection(DcMotorSimple.Direction.REVERSE);
+            //  rightEncs.get(0).setDirection(DcMotorSimple.Direction.REVERSE);
 
             this.pose = pose;
         }
@@ -251,6 +250,7 @@ public final class TankDrive {
         //  reverse motor directions if needed
         leftMotors.get(0).setDirection(DcMotorEx.Direction.REVERSE);
         leftMotors.get(1).setDirection(DcMotorEx.Direction.REVERSE);
+        rightMotors.get(0).setDirection(DcMotorEx.Direction.FORWARD);
         rightMotors.get(1).setDirection(DcMotorEx.Direction.FORWARD);
 
         //  make sure your config has an IMU with this name (can be BNO or BHI)
