@@ -69,7 +69,7 @@ public class Robot {
 
 //            // PinPoint Localizer
 //            pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-//            pinPoint.setOffsets(-176, -68, DistanceUnit.MM);
+//            pinPoint.setOffsets(-176, -66, DistanceUnit.MM);
 //            pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
 //            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 //            pinPoint.resetPosAndIMU();
