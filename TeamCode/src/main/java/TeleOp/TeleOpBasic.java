@@ -4,10 +4,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
-
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 import Systems.Robot;
 
@@ -22,29 +19,31 @@ import Systems.Robot;
  * - Right Analog X:     Rotates Robot Left and Right
  * - Right Analog Y:     N/A
  * - Left Bumper:        Activate Intake + Sort to Left Side
- * - Left Trigger:       Charge FlyWheel
+ * - Left Trigger:       AimBot
  * - Right Bumper:       Activate Intake + Sort to Right Side
  * - Right Trigger:      Charge FlyWheel
- * - DPad Up:            AimBot
- * - DPad Down:          AimBot
- * - DPad Left:          AimBot
- * - DPad Right:         AimBot
+ * - DPad Up:            Returns Function
+ * - DPad Down:          Returns Function
+ * - DPad Left:          Returns Function
+ * - DPad Right:         Returns Function
  * - FaceButton Up:      Shoot Left Side
  * - FaceButton Down:    Returns Function
  * - FaceButton Left:    Returns Function
  * - FaceButton Right:   Shoot Right Side
  *
- * @Author Gurej Singh
+ * @Author Gurtej Singh
  */
 
-@TeleOp(name = "Tank", group = "TeleOp")
+@TeleOp(name = "TestTank", group = "TeleOp")
 public class TeleOpBasic extends LinearOpMode {
 
     // Robot Instance
     private final Robot robot = new Robot();
 
     // FlyWheel Variables
-    private static final double targetRPS = 53.5;
+    private static double targetRPS = 0.0;
+    private static final double farTargetRPS = 53.5;
+    private static final double closeTargetRPS = 35.0; // TODO: Tune RPS
     private static final double TicksPerRev = 28.0; // FlyWheel Encoder Resolution
     private final double artifactHoldRight = 0.5;
     private final double artifactHoldLeft = 0.0;
@@ -58,6 +57,7 @@ public class TeleOpBasic extends LinearOpMode {
     // AprilTag / Vision Variables
     private static final double rotateGain = 0.0250;
     private static final double maxRotate = 0.75;
+    private static final double tagAreaThreshold = 10.0;
 
     @Override
     public void runOpMode() {
@@ -83,7 +83,21 @@ public class TeleOpBasic extends LinearOpMode {
             boolean activeTargeting = gamepad1.left_trigger >= 0.25;
             LLResult result = robot.vision.limeLight.getLatestResult();
             boolean hasTarget = result != null && result.isValid();
+            double tagArea = 0.0;
 
+            // Distance Calculation
+            if (hasTarget) {
+                tagArea = result.getTa();
+                if (tagArea >= tagAreaThreshold) {
+                    targetRPS = closeTargetRPS;
+                } else {
+                    targetRPS = farTargetRPS;
+                }
+            } else {
+                targetRPS = (closeTargetRPS + farTargetRPS) / 2;
+            }
+
+            // AIMBOT
             if (activeTargeting && hasTarget) {
                 double headingError = result.getTx();
                 drive = -gamepad1.left_stick_y;
@@ -128,7 +142,7 @@ public class TeleOpBasic extends LinearOpMode {
             }
 
             // Artifact Release Control
-            if (gamepad1.yWasPressed()) {
+            if (gamepad1.xWasPressed()) {
                 leftGateOpenUntil = now + 250;
                 leftShotEndTime = now + 1500;
             }
@@ -171,6 +185,7 @@ public class TeleOpBasic extends LinearOpMode {
             telemetry.addData("Rotate", "%5.2f", rotate);
             telemetry.addData("AimBot Active", activeTargeting && hasTarget);
             telemetry.addData("Tag In View", hasTarget);
+            telemetry.addData("Tag Area", hasTarget ? result.getTa() : 0.0);
             telemetry.addLine();
 
             // Intake / Sorter
@@ -187,6 +202,7 @@ public class TeleOpBasic extends LinearOpMode {
             telemetry.addData("Flywheel2 RPS", "%5.2f", measuredFlywheelRps2);
             telemetry.addData("Avg RPS", "%5.2f", averageFlywheelRps);
             telemetry.addData("Target RPS", "%5.2f", targetRPS);
+            telemetry.addData("Range Mode", targetRPS == closeTargetRPS ? "CLOSE" : "FAR");
             telemetry.addData("Shooter Status", ((averageFlywheelRps >= (targetRPS - 1.0)) && (gamepad1.right_trigger >= 0.05)) ? "READY" : "CHARGING");
             telemetry.addData("Left Gate", (now < leftGateOpenUntil) ? "Open" : "Closed");
             telemetry.addData("Right Gate", (now < rightGateOpenUntil) ? "Open" : "Closed");

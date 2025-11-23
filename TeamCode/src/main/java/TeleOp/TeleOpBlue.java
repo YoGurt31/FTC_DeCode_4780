@@ -23,19 +23,19 @@ import Systems.Robot;
  * - Right Analog X:     Rotates Robot Left and Right
  * - Right Analog Y:     N/A
  * - Left Bumper:        Activate Intake + Sort to Left Side
- * - Left Trigger:       Charge FlyWheel
+ * - Left Trigger:       AimBot
  * - Right Bumper:       Activate Intake + Sort to Right Side
  * - Right Trigger:      Charge FlyWheel
- * - DPad Up:            AimBot
- * - DPad Down:          AimBot
- * - DPad Left:          AimBot
- * - DPad Right:         AimBot
+ * - DPad Up:            Returns Function
+ * - DPad Down:          Returns Function
+ * - DPad Left:          Returns Function
+ * - DPad Right:         Returns Function
  * - FaceButton Up:      Shoot Left Side
  * - FaceButton Down:    Returns Function
  * - FaceButton Left:    Returns Function
  * - FaceButton Right:   Shoot Right Side
  *
- * @Author Gurej Singh
+ * @Author Gurtej Singh
  */
 
 @TeleOp(name = "BLUE", group = "TeleOp")
@@ -131,7 +131,7 @@ public class TeleOpBlue extends LinearOpMode {
             }
 
             // Artifact Release Control
-            if (gamepad1.yWasPressed()) {
+            if (gamepad1.xWasPressed()) {
                 leftGateOpenUntil = now + 250;
                 leftShotEndTime = now + 1500;
             }
