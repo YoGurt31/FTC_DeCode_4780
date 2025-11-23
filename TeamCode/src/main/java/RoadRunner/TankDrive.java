@@ -78,9 +78,6 @@ public final class TankDrive {
         public double kS = 0.0;
         public double kV = 0.0;
         public double kA = 0.0;
-//        public double kS = 1.31525;
-//        public double kV = 0.000345;
-//        public double kA = 0.00005;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 50;
@@ -251,10 +248,10 @@ public final class TankDrive {
         }
 
         // TODO: reverse motor directions if needed
-        leftMotors.get(0).setDirection(DcMotorEx.Direction.REVERSE);
-        leftMotors.get(1).setDirection(DcMotorEx.Direction.REVERSE);
-        rightMotors.get(0).setDirection(DcMotorEx.Direction.FORWARD);
-        rightMotors.get(1).setDirection(DcMotorEx.Direction.FORWARD);
+        leftMotors.get(0).setDirection(DcMotorEx.Direction.FORWARD);
+        leftMotors.get(1).setDirection(DcMotorEx.Direction.FORWARD);
+        rightMotors.get(0).setDirection(DcMotorEx.Direction.REVERSE);
+        rightMotors.get(1).setDirection(DcMotorEx.Direction.REVERSE);
 
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html

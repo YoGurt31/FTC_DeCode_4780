@@ -44,10 +44,10 @@ public class Robot {
             backRight = hardwareMap.get(DcMotorEx.class, "bR");
 
             // Set Motor Directions - Positive Power should Drives Forward
-            frontLeft.setDirection(DcMotorEx.Direction.REVERSE);
-            backLeft.setDirection(DcMotorEx.Direction.REVERSE);
-            frontRight.setDirection(DcMotorEx.Direction.FORWARD);
-            backRight.setDirection(DcMotorEx.Direction.FORWARD);
+            frontLeft.setDirection(DcMotorEx.Direction.FORWARD);
+            backLeft.setDirection(DcMotorEx.Direction.FORWARD);
+            frontRight.setDirection(DcMotorEx.Direction.REVERSE);
+            backRight.setDirection(DcMotorEx.Direction.REVERSE);
 
             // Brake when Power = 0 (Helps Negate Momentum)
             frontLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
@@ -77,8 +77,8 @@ public class Robot {
         }
 
         public void tankDrive(double Drive, double Rotate) {
-            double leftPower = Drive - Rotate;
-            double rightPower = Drive + Rotate;
+            double leftPower = Drive + Rotate;
+            double rightPower = Drive - Rotate;
 
             // Prevents Motors from Exceeding 100% Power
             double maxPower = Math.max(Math.abs(leftPower), Math.abs(rightPower));
