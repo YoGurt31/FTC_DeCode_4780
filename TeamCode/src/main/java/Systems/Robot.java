@@ -67,13 +67,13 @@ public class Robot {
             backLeft.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
             backRight.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
 
-            // TODO: ENCODER DIRECTIONS
-            pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-            pinPoint.setOffsets(-176, 68, DistanceUnit.MM);
-            pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-            pinPoint.resetPosAndIMU();
-            pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
+//            // PinPoint Localizer
+//            pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+//            pinPoint.setOffsets(-176, -68, DistanceUnit.MM);
+//            pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+//            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+//            pinPoint.resetPosAndIMU();
+//            pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
         }
 
         public void tankDrive(double Drive, double Rotate) {

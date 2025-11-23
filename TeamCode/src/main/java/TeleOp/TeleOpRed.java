@@ -3,6 +3,7 @@ package TeleOp;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -39,13 +40,14 @@ import Systems.Robot;
  */
 
 @TeleOp(name = "RED", group = "TeleOp")
+@Disabled
 public class TeleOpRed extends LinearOpMode {
 
     // Robot Instance
     private final Robot robot = new Robot();
 
     // FlyWheel Variables
-    private static final double targetRPS = 55.0;
+    private static final double targetRPS = 53.5;
     private static final double TicksPerRev = 28.0; // FlyWheel Encoder Resolution
     private final double artifactHoldRight = 0.5;
     private final double artifactHoldLeft = 0.0;
@@ -65,9 +67,6 @@ public class TeleOpRed extends LinearOpMode {
 
         robot.init(hardwareMap);
 
-        // Active If Using WebCam
-        // FtcDashboard.getInstance().startCameraStream(robot.vision.visionPortal, 20);
-
         // Active If Using LimeLight
         FtcDashboard.getInstance().startCameraStream(robot.vision.limeLight, 30);
         robot.vision.limeLight.setPollRateHz(90);
@@ -78,7 +77,6 @@ public class TeleOpRed extends LinearOpMode {
         telemetry.addLine("Status: Initialized. Ready to start.");
         telemetry.update();
 
-        // Wait for the Start button to be pressed on the Driver Station.
         waitForStart();
 
         while (opModeIsActive()) {
@@ -86,25 +84,17 @@ public class TeleOpRed extends LinearOpMode {
             long now = System.currentTimeMillis();
 
             // AprilTag Targeting
-            boolean activeTargeting = gamepad1.left_trigger >= 0.5;
+            boolean activeTargeting = gamepad1.left_trigger >= 0.25;
             LLResult result = robot.vision.limeLight.getLatestResult();
-            boolean hasTarget = (result != null && result.isValid()) && (result.getFiducialResults() != null && !result.getFiducialResults().isEmpty());
+            boolean hasTarget = result != null && result.isValid();
 
-            if (activeTargeting && hasTarget && (result.getFiducialResults().get(0).getFiducialId() == 24)) {
+            if (activeTargeting && hasTarget) {
                 double headingError = result.getTx();
-
                 drive = -gamepad1.left_stick_y;
                 rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
-
-                telemetry.addData("Limelight", "Tracking");
-                telemetry.addData("Heading Error", result.getTx());
-                telemetry.addData("Auto", "Drive %5.2f, Turn %5.2f ", drive, rotate);
             } else {
                 drive = -gamepad1.left_stick_y;
                 rotate = gamepad1.right_stick_x;
-
-                telemetry.addData("Limelight", hasTarget ? "Target in View" : "No Target");
-                telemetry.addData("Manual", "Drive %5.2f, Turn %5.2f ", drive, rotate);
             }
 
             robot.driveTrain.tankDrive(drive, rotate);
@@ -154,9 +144,8 @@ public class TeleOpRed extends LinearOpMode {
 
             boolean leftShotActive = now < leftShotEndTime;
             boolean rightShotActive = now < rightShotEndTime;
-            boolean anyShotActive = leftShotActive || rightShotActive;
 
-            if (anyShotActive) {
+            if (leftShotActive || rightShotActive) {
                 robot.scoringMechanisms.rollerIntake.setPower(1.0);
 
                 if (leftShotActive && !rightShotActive) {
@@ -180,11 +169,31 @@ public class TeleOpRed extends LinearOpMode {
                 robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
             }
 
-            telemetry.addData("Flywheel1 Vel", robot.scoringMechanisms.flyWheel1.getVelocity());
-            telemetry.addData("Flywheel2 Vel", robot.scoringMechanisms.flyWheel2.getVelocity());
-            telemetry.addData("Flywheel1 RPS (Measured)", measuredFlywheelRps1);
-            telemetry.addData("Flywheel2 RPS (Measured)", measuredFlywheelRps2);
-            telemetry.addData("Flywheel RPS (Target)", targetRPS);
+            // Drive / AimBot
+            telemetry.addLine("=== Drive + AimBot ===");
+            telemetry.addData("Drive", "%5.2f", drive);
+            telemetry.addData("Rotate", "%5.2f", rotate);
+            telemetry.addData("AimBot Active", activeTargeting && hasTarget);
+            telemetry.addData("Tag In View", hasTarget);
+            telemetry.addLine();
+
+            // Intake / Sorter
+            telemetry.addLine("=== Intake + Sorter ===");
+            telemetry.addData("Roller Status", robot.scoringMechanisms.rollerIntake.getPower() > 0 ? "ACTIVE" : "IDLE");
+            String sorterStatus; if (gamepad1.left_bumper && !gamepad1.right_bumper) { sorterStatus = "LEFT"; } else if (gamepad1.right_bumper && !gamepad1.left_bumper) { sorterStatus = "RIGHT"; } else { sorterStatus = "IDLE"; }
+            telemetry.addData("Sorting", sorterStatus);
+            telemetry.addLine();
+
+            // Shooter / Gates
+            double averageFlywheelRps = (measuredFlywheelRps1 + measuredFlywheelRps2) / 2.0;
+            telemetry.addLine("=== Shooter + Gates ===");
+            telemetry.addData("Flywheel1 RPS", "%5.2f", measuredFlywheelRps1);
+            telemetry.addData("Flywheel2 RPS", "%5.2f", measuredFlywheelRps2);
+            telemetry.addData("Avg RPS", "%5.2f", averageFlywheelRps);
+            telemetry.addData("Target RPS", "%5.2f", targetRPS);
+            telemetry.addData("Shooter Status", ((averageFlywheelRps >= (targetRPS - 1.0)) && (gamepad1.right_trigger >= 0.05)) ? "READY" : "CHARGING");
+            telemetry.addData("Left Gate", (now < leftGateOpenUntil) ? "Open" : "Closed");
+            telemetry.addData("Right Gate", (now < rightGateOpenUntil) ? "Open" : "Closed");
 
             telemetry.update();
         }
