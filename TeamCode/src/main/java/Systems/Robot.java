@@ -3,6 +3,8 @@ package Systems;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -67,13 +69,13 @@ public class Robot {
             backLeft.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
             backRight.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
 
-//            // PinPoint Localizer
-//            pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-//            pinPoint.setOffsets(-176, -66, DistanceUnit.MM);
-//            pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-//            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
-//            pinPoint.resetPosAndIMU();
-//            pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
+            // PinPoint Localizer
+            pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+            pinPoint.setOffsets(-176, -66, DistanceUnit.MM);
+            pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+            pinPoint.resetPosAndIMU();
+            pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
         }
 
         public void tankDrive(double Drive, double Rotate) {
@@ -99,6 +101,50 @@ public class Robot {
             frontRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
             backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
             backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        }
+
+        public void driveForwardInches(LinearOpMode opMode, double inches, double power) {
+            if (pinPoint == null || opMode == null) return;
+
+            power = Range.clip(power, -1.0, 1.0);
+            if (inches <= 0.0 || Math.abs(power) < 1e-3) {
+                return;
+            }
+
+            pinPoint.update();
+            Pose2D startPose = pinPoint.getPosition();
+            double startX = startPose.getX(DistanceUnit.INCH);
+            double startY = startPose.getY(DistanceUnit.INCH);
+            double targetHeadingRad = startPose.getHeading(AngleUnit.RADIANS);
+
+            final double kHeading = 0.75;
+            final double maxRotate = 0.40;
+
+            while (opMode.opModeIsActive()) {
+                pinPoint.update();
+                Pose2D currPose = pinPoint.getPosition();
+                double currX = currPose.getX(DistanceUnit.INCH);
+                double currY = currPose.getY(DistanceUnit.INCH);
+                double currHeadingRad = currPose.getHeading(AngleUnit.RADIANS);
+
+                double dx = currX - startX;
+                double dy = currY - startY;
+                double traveled = Math.hypot(dx, dy);
+
+                if (traveled >= inches) {
+                    break;
+                }
+
+                double headingError = AngleUnit.normalizeRadians(targetHeadingRad - currHeadingRad);
+                double rotateCmd = Range.clip(headingError * kHeading, -maxRotate, maxRotate);
+
+                tankDrive(power, rotateCmd);
+
+                opMode.idle();
+            }
+
+            tankDrive(0.0, 0.0);
+            brake();
         }
 
     }
@@ -148,11 +194,56 @@ public class Robot {
 
     public class Vision {
         public Limelight3A limeLight;
+        public int motifTagId = -1;
+        public String motifPattern = "UNKNOWN";
 
         public void init(HardwareMap hardwareMap) {
             limeLight = hardwareMap.get(Limelight3A.class, "limelight");
             limeLight.pipelineSwitch(0);
             limeLight.start();
+        }
+
+        public void updateMotif() {
+            if (motifTagId == 21 || motifTagId == 22 || motifTagId == 23) {
+                return;
+            }
+
+            if (limeLight == null) {
+                return;
+            }
+
+            LLResult result = limeLight.getLatestResult();
+            if (result == null || !result.isValid()) {
+                return;
+            }
+
+            java.util.List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
+            if (fiducials == null || fiducials.isEmpty()) {
+                return;
+            }
+
+            int id = fiducials.get(0).getFiducialId();
+
+            switch (id) {
+                case 21:
+                    motifTagId = 21;
+                    motifPattern = "GPP";
+                    break;
+                case 22:
+                    motifTagId = 22;
+                    motifPattern = "PGP";
+                    break;
+                case 23:
+                    motifTagId = 23;
+                    motifPattern = "PPG";
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public boolean hasMotif() {
+            return motifTagId == 21 || motifTagId == 22 || motifTagId == 23;
         }
     }
 

@@ -142,12 +142,18 @@ public class TeleOpBasic extends LinearOpMode {
             }
 
             // Artifact Release Control
-            if (gamepad1.xWasPressed()) {
+            if (gamepad1.x) {
+                leftGateOpenUntil = 999999999;
+                leftShotEndTime = 0;
+            } else if (gamepad1.xWasReleased()) {
                 leftGateOpenUntil = now + 250;
                 leftShotEndTime = now + 1500;
             }
 
-            if (gamepad1.bWasPressed()) {
+            if (gamepad1.b) {
+                rightGateOpenUntil = 999999999;
+                rightShotEndTime = 0;
+            } else if (gamepad1.bWasReleased()) {
                 rightGateOpenUntil = now + 250;
                 rightShotEndTime = now + 1500;
             }
@@ -167,17 +173,8 @@ public class TeleOpBasic extends LinearOpMode {
                 }
             }
 
-            if (now < leftGateOpenUntil) {
-                robot.scoringMechanisms.leftRelease.setPosition(artifactReleaseLeft);
-            } else {
-                robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
-            }
-
-            if (now < rightGateOpenUntil) {
-                robot.scoringMechanisms.rightRelease.setPosition(artifactReleaseRight);
-            } else {
-                robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
-            }
+            robot.scoringMechanisms.leftRelease.setPosition(now < leftGateOpenUntil ? artifactReleaseLeft : artifactHoldLeft);
+            robot.scoringMechanisms.rightRelease.setPosition(now < rightGateOpenUntil ? artifactReleaseRight : artifactHoldRight);
 
             // Drive / AimBot
             telemetry.addLine("=== Drive + AimBot ===");
