@@ -110,6 +110,8 @@ public class AutonBlue extends LinearOpMode {
 
     private void aimAtTag(int desiredTagId) {
         // Phase 1: Rotate to See Desired Tag
+        long searchStart = System.currentTimeMillis();
+        final long searchTimeOut = 3000;
         while (opModeIsActive()) {
             LLResult result = robot.vision.limeLight.getLatestResult();
             boolean hasTarget = result != null && result.isValid();
@@ -122,7 +124,7 @@ public class AutonBlue extends LinearOpMode {
                 }
             }
 
-            if (hasTarget && tagId == desiredTagId) {
+            if (hasTarget && tagId == desiredTagId || System.currentTimeMillis() - searchStart > searchTimeOut) {
                 break;
             }
 
@@ -133,6 +135,8 @@ public class AutonBlue extends LinearOpMode {
         }
 
         // Phase 2: AimBot
+        long alignStart = System.currentTimeMillis();
+        final long alignmentTimeOut = 3000;
         while (opModeIsActive()) {
             LLResult result = robot.vision.limeLight.getLatestResult();
             boolean hasTarget = result != null && result.isValid();
@@ -147,7 +151,7 @@ public class AutonBlue extends LinearOpMode {
 
             robot.driveTrain.tankDrive(0.0, rotate);
 
-            if (Math.abs(headingError) <= 1.0) {
+            if (Math.abs(headingError) <= 1.0 || System.currentTimeMillis() - alignStart > alignmentTimeOut) {
                 break;
             }
 
