@@ -5,10 +5,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
-
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 import Systems.Robot;
 
@@ -71,7 +68,7 @@ public class TeleOpBlue extends LinearOpMode {
         robot.vision.limeLight.setPollRateHz(90);
         robot.vision.limeLight.pipelineSwitch(2);
 
-        double drive = 0, rotate = 0;
+        double drive, rotate;
 
         telemetry.addLine("Status: Initialized. Ready to start.");
         telemetry.update();

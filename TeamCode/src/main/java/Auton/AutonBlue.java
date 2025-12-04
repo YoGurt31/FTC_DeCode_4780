@@ -17,7 +17,7 @@ public class AutonBlue extends LinearOpMode {
 
     // FlyWheel Variables
     private static final double targetRPS = 53.5;
-    private static final double TicksPerRev = 28.0; // FlyWheel Encoder Resolution
+    private static final double TicksPerRev = 28.0;
     private final double artifactHoldRight = 0.5;
     private final double artifactHoldLeft = 0.0;
     private final double artifactReleaseRight = 1.0;

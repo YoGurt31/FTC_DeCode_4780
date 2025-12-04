@@ -7,14 +7,10 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.TouchSensor;
-import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.hardware.ServoController;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -32,10 +28,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Robot {
 
-    public class DriveTrain {
+    public static class DriveTrain {
         // Hardware Devices
         public DcMotorEx frontLeft, frontRight, backLeft, backRight;
         public GoBildaPinpointDriver pinPoint;
+        public Servo gearShift;
 
         public void init(HardwareMap hardwareMap) {
 
@@ -71,11 +68,16 @@ public class Robot {
 
             // PinPoint Localizer
             pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-            pinPoint.setOffsets(-176, -66, DistanceUnit.MM);
+            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
             pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+            pinPoint.setOffsets(-176, -66, DistanceUnit.MM);
             pinPoint.resetPosAndIMU();
             pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
+
+            // GearShift SetUp
+            gearShift = hardwareMap.get(Servo.class, "gearShift");
+            gearShift.setDirection(Servo.Direction.FORWARD);
+            gearShift.setPosition(0.0);
         }
 
         public void tankDrive(double Drive, double Rotate) {
@@ -149,7 +151,7 @@ public class Robot {
 
     }
 
-    public class ScoringMechanisms {
+    public static class ScoringMechanisms {
         // Hardware Devices
         public DcMotorEx rollerIntake, sorterIntake, flyWheel1, flyWheel2;
         public Servo leftRelease, rightRelease;
@@ -192,7 +194,7 @@ public class Robot {
         }
     }
 
-    public class Vision {
+    public static class Vision {
         public Limelight3A limeLight;
         public int motifTagId = -1;
         public String motifPattern = "UNKNOWN";
