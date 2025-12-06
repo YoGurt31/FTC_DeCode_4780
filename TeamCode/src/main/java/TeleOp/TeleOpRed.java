@@ -119,7 +119,7 @@ public class TeleOpRed extends LinearOpMode {
                 rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
             } else {
                 drive = -gamepad1.left_stick_y;
-                rotate = gamepad1.right_stick_x;
+                rotate = -gamepad1.right_stick_x;
             }
 
             robot.driveTrain.tankDrive(drive, rotate);

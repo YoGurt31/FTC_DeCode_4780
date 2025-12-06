@@ -3,6 +3,7 @@ package TeleOp;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
@@ -39,6 +40,7 @@ import Systems.Robot;
  */
 
 @TeleOp(name = "TestTank", group = "TeleOp")
+@Disabled
 public class TeleOpBasic extends LinearOpMode {
 
     // Robot Instance
@@ -110,7 +112,7 @@ public class TeleOpBasic extends LinearOpMode {
                 rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
             } else {
                 drive = -gamepad1.left_stick_y;
-                rotate = gamepad1.right_stick_x;
+                rotate = -gamepad1.right_stick_x;
             }
 
             robot.driveTrain.tankDrive(drive, rotate);

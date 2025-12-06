@@ -83,8 +83,8 @@ public class Robot {
         }
 
         public void tankDrive(double Drive, double Rotate) {
-            double leftPower = Drive + Rotate;
-            double rightPower = Drive - Rotate;
+            double leftPower = Drive - Rotate;
+            double rightPower = Drive + Rotate;
 
             // Prevents Motors from Exceeding 100% Power
             double maxPower = Math.max(Math.abs(leftPower), Math.abs(rightPower));
@@ -199,6 +199,8 @@ public class Robot {
     public static class Vision {
         public Limelight3A limeLight;
         public int desiredPipeline = 0;
+        public int RED = 1;
+        public int BLUE = 2;
         public int motifTagId = -1;
         public String motifPattern = "UNKNOWN";
 
