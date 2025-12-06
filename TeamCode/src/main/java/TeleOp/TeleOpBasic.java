@@ -2,6 +2,7 @@ package TeleOp;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
@@ -46,8 +47,8 @@ public class TeleOpBasic extends LinearOpMode {
     // FlyWheel Variables
     private static double targetRPS = 0.0;
     private static final double farTargetRPS = 53.5;
-    private static final double closeTargetRPS = 35.0; // TODO: Tune RPS
-    private static final double TicksPerRev = 28.0; // FlyWheel Encoder Resolution
+    private static final double closeTargetRPS = 48.5;
+    private static final double TicksPerRev = 28.0;
     private final double artifactHoldRight = 0.5;
     private final double artifactHoldLeft = 0.0;
     private final double artifactReleaseRight = 1.0;
@@ -60,7 +61,7 @@ public class TeleOpBasic extends LinearOpMode {
     // AprilTag / Vision Variables
     private static final double rotateGain = 0.0250;
     private static final double maxRotate = 0.75;
-    private static final double tagAreaThreshold = 10.0;
+    private static final double tagAreaThreshold = 0.8;
 
     @Override
     public void runOpMode() {
@@ -69,7 +70,7 @@ public class TeleOpBasic extends LinearOpMode {
 
         // Active If Using LimeLight
         FtcDashboard.getInstance().startCameraStream(robot.vision.limeLight, 30);
-        robot.vision.limeLight.setPollRateHz(90);
+        robot.vision.limeLight.setPollRateHz(15);
 
         double drive, rotate;
 
@@ -80,15 +81,17 @@ public class TeleOpBasic extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            long now = System.currentTimeMillis();
-
             // AprilTag Targeting
             boolean activeTargeting = gamepad1.left_trigger >= 0.25;
             LLResult result = robot.vision.limeLight.getLatestResult();
-            boolean hasTarget = result != null && result.isValid();
+            boolean hasTarget = false;
             double tagArea;
 
-            // TODO: Distance Calculation - Include In Primary TeleOps Once Functional
+            if (result != null && result.isValid()) {
+                java.util.List<LLResultTypes.FiducialResult> tags = result.getFiducialResults();
+                hasTarget = tags != null && !tags.isEmpty();
+            }
+
             if (hasTarget) {
                 tagArea = result.getTa();
                 if (tagArea >= tagAreaThreshold) {
@@ -97,7 +100,7 @@ public class TeleOpBasic extends LinearOpMode {
                     targetRPS = farTargetRPS;
                 }
             } else {
-                targetRPS = (closeTargetRPS + farTargetRPS) / 2;
+                targetRPS = farTargetRPS;
             }
 
             // AIMBOT
@@ -145,19 +148,21 @@ public class TeleOpBasic extends LinearOpMode {
             }
 
             // Artifact Release Control
+            long now = System.currentTimeMillis();
+
             if (gamepad1.x) {
-                leftGateOpenUntil = 999999999;
+                leftGateOpenUntil = Long.MAX_VALUE;
                 leftShotEndTime = 0;
             } else if (gamepad1.xWasReleased()) {
-                leftGateOpenUntil = now + 250;
+                leftGateOpenUntil = now + 100;
                 leftShotEndTime = now + 1500;
             }
 
             if (gamepad1.b) {
-                rightGateOpenUntil = 999999999;
+                rightGateOpenUntil = Long.MAX_VALUE;
                 rightShotEndTime = 0;
             } else if (gamepad1.bWasReleased()) {
-                rightGateOpenUntil = now + 250;
+                rightGateOpenUntil = now + 100;
                 rightShotEndTime = now + 1500;
             }
 
@@ -180,19 +185,7 @@ public class TeleOpBasic extends LinearOpMode {
             robot.scoringMechanisms.rightRelease.setPosition(now < rightGateOpenUntil ? artifactReleaseRight : artifactHoldRight);
 
             // TODO: GearShifter / Elevator Controller
-            if (gamepad1.dpadLeftWasPressed()) {
-                robot.driveTrain.gearShift.setPosition(1.0);
-            }
 
-            if (gamepad1.dpadRightWasPressed()) {
-                robot.driveTrain.gearShift.setPosition(0.0);
-            }
-
-            if (gamepad1.dpadUpWasPressed()) {
-                robot.driveTrain.tankDrive(1,0);
-            } else {
-                robot.driveTrain.brake();
-            }
 
             // Drive / AimBot
             telemetry.addLine("=== Drive + AimBot ===");
@@ -202,6 +195,7 @@ public class TeleOpBasic extends LinearOpMode {
             telemetry.addData("AimBot Active", activeTargeting && hasTarget);
             telemetry.addData("Tag In View", hasTarget);
             telemetry.addData("Tag Area", hasTarget ? result.getTa() : 0.0);
+            telemetry.addData("Current Pipeline", robot.vision.limeLight.getStatus().getPipelineIndex() == 0 ? "NULL" : robot.vision.limeLight.getStatus().getPipelineIndex() == 1 ? "RED" : "BLUE");
             telemetry.addLine();
 
             // Intake / Sorter
@@ -224,9 +218,9 @@ public class TeleOpBasic extends LinearOpMode {
             telemetry.addData("Right Gate", (now < rightGateOpenUntil) ? "Open" : "Closed");
 
             // Intake / Sorter
-            telemetry.addLine("=== GearShifter ===");
-            telemetry.addData("Shifted To", robot.driveTrain.gearShift.getPosition() == 0.0 ? "DriveTrain" : "Elevator");
-            telemetry.addLine();
+//            telemetry.addLine("=== GearShifter ===");
+//            telemetry.addData("Shifted To", robot.driveTrain.gearShift.getPosition() == 0.0 ? "DriveTrain" : "Elevator");
+//            telemetry.addLine();
 
             telemetry.update();
         }

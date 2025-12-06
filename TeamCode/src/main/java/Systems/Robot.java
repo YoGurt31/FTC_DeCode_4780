@@ -10,7 +10,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.ServoController;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -22,7 +21,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  * Includes Universal and General Functions
  *
  * @Author Gurtej Singh
- * @Version 1.0
  * adb connect 192.168.43.1:5555
  */
 
@@ -32,7 +30,7 @@ public class Robot {
         // Hardware Devices
         public DcMotorEx frontLeft, frontRight, backLeft, backRight;
         public GoBildaPinpointDriver pinPoint;
-        public Servo gearShift;
+        public Servo gearShiftLeft, gearShiftRight;
 
         public void init(HardwareMap hardwareMap) {
 
@@ -48,11 +46,11 @@ public class Robot {
             frontRight.setDirection(DcMotorEx.Direction.REVERSE);
             backRight.setDirection(DcMotorEx.Direction.REVERSE);
 
-            // Brake when Power = 0 (Helps Negate Momentum)
-            frontLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-            frontRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-            backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-            backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+            // Float when Power = 0 (Helps Conserve Battery)
+            frontLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+            frontRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+            backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+            backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
 
             // Stops Motors and Resets Encoders - Motors will NOT Run unless Encoder Mode is Defined
             frontLeft.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
@@ -70,14 +68,18 @@ public class Robot {
             pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
             pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
             pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-            pinPoint.setOffsets(-176, -66, DistanceUnit.MM);
+            pinPoint.setOffsets(-176, -66, DistanceUnit.MM); // TODO: Tune Values
             pinPoint.resetPosAndIMU();
             pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
 
-            // GearShift SetUp
-            gearShift = hardwareMap.get(Servo.class, "gearShift");
-            gearShift.setDirection(Servo.Direction.FORWARD);
-            gearShift.setPosition(0.0);
+            // GearShift SetUp // TODO: Tune
+            gearShiftLeft = hardwareMap.get(Servo.class, "gearShiftLeft");
+            gearShiftLeft.setDirection(Servo.Direction.FORWARD);
+            gearShiftLeft.setPosition(0.0);
+
+            gearShiftRight = hardwareMap.get(Servo.class, "gearShiftRight");
+            gearShiftRight.setDirection(Servo.Direction.REVERSE);
+            gearShiftRight.setPosition(0.0);
         }
 
         public void tankDrive(double Drive, double Rotate) {
@@ -99,10 +101,10 @@ public class Robot {
         }
 
         public void brake() {
-            frontLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-            frontRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-            backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-            backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+            frontLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+            frontRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+            backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+            backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
         }
 
         public void driveForwardInches(LinearOpMode opMode, double inches, double power) {
@@ -196,6 +198,7 @@ public class Robot {
 
     public static class Vision {
         public Limelight3A limeLight;
+        public int desiredPipeline = 0;
         public int motifTagId = -1;
         public String motifPattern = "UNKNOWN";
 
@@ -203,6 +206,38 @@ public class Robot {
             limeLight = hardwareMap.get(Limelight3A.class, "limelight");
             limeLight.pipelineSwitch(0);
             limeLight.start();
+        }
+
+        public void setPipeline(int pipelineIndex) {
+            desiredPipeline = pipelineIndex;
+            if (limeLight != null) {
+                try {
+                    limeLight.pipelineSwitch(desiredPipeline);
+                } catch (Exception ignored) {}
+            }
+        }
+
+        public void maintainPipeline() {
+            if (limeLight == null) return;
+            try {
+                int current = limeLight.getLatestResult().getPipelineIndex();
+                if (current != desiredPipeline) {
+                    limeLight.pipelineSwitch(desiredPipeline);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        public void reboot() {
+            if (limeLight == null) return;
+            try {
+                limeLight.stop();
+            } catch (Exception ignored) {}
+
+            try {
+                limeLight.start();
+                limeLight.pipelineSwitch(desiredPipeline);
+            } catch (Exception ignored) {}
         }
 
         public void updateMotif() {

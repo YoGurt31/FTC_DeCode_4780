@@ -26,11 +26,11 @@ public class AutonRed extends LinearOpMode {
     // AprilTag / Vision Variables
     private static final double rotateGain = 0.0250;
     private static final double maxRotate = 0.75;
-    private static final int blueTargetId = 20;
+    private static final int redTargetId = 24;
 
-    // Drive Constants // TODO : Edit Rotate Power To Rotate Right
-    private static final double drivePower = 0.50;
-    private static final double rotatePower = 0.20;
+    // Drive Constants
+    private static final double drivePower = 0.25;
+    private static final double rotatePower = 0.10;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -39,7 +39,7 @@ public class AutonRed extends LinearOpMode {
 
         // Active If Using LimeLight
         FtcDashboard.getInstance().startCameraStream(robot.vision.limeLight, 30);
-        robot.vision.limeLight.setPollRateHz(90);
+        robot.vision.limeLight.setPollRateHz(30);
         robot.vision.limeLight.pipelineSwitch(0);
 
         telemetry.addLine("Status: Initialized");
@@ -47,31 +47,32 @@ public class AutonRed extends LinearOpMode {
         telemetry.addLine("Scanning Motif...");
         telemetry.update();
 
-        while (!isStarted() && !isStopRequested()) {
-            robot.vision.updateMotif();
+        waitForStart();
+        // Motif Detection
+        robot.vision.updateMotif();
 
-            telemetry.addLine("=== Motif Detection ===");
-            telemetry.addData("Has Motif", robot.vision.hasMotif());
-            telemetry.addData("Motif Tag ID", robot.vision.motifTagId);
-            telemetry.addData("Motif Pattern", robot.vision.motifPattern);
-            telemetry.update();
+        telemetry.addLine("=== Motif Detection ===");
+        telemetry.addData("Has Motif", robot.vision.hasMotif());
+        telemetry.addData("Motif Tag ID", robot.vision.motifTagId);
+        telemetry.addData("Motif Pattern", robot.vision.motifPattern);
+        telemetry.update();
 
-            idle();
-        }
-
-        if (isStopRequested()) return;
+        sleep(1000);
 
         // Motif Detected or BackUp
         String motif = robot.vision.hasMotif() ? robot.vision.motifPattern : "GPP";
 
-        // Blue PipeLine
-        robot.vision.limeLight.pipelineSwitch(1);
+        // Red PipeLine
+        robot.vision.setPipeline(1);
 
-        // Sequence
-        spinUpFlywheel();
-        aimAtTag(blueTargetId);
+        // TODO: Sequence
+        robot.driveTrain.tankDrive(drivePower, 0);
+        sleep(1000);
+        aimAtTag(redTargetId);
         shootMotif(motif);
-        robot.driveTrain.driveForwardInches(this, 12.0, drivePower);
+        sleep(1000);
+        robot.driveTrain.tankDrive(drivePower, 0);
+        sleep(2000);
 
         // Shutdown
         robot.scoringMechanisms.flyWheel1.setPower(0.0);
@@ -83,82 +84,119 @@ public class AutonRed extends LinearOpMode {
         robot.vision.limeLight.stop();
     }
 
-    private void spinUpFlywheel() {
-        while (opModeIsActive()) {
-            double measuredFlywheelRps1 = Math.abs(robot.scoringMechanisms.flyWheel1.getVelocity()) / TicksPerRev;
-            double measuredFlywheelRps2 = Math.abs(robot.scoringMechanisms.flyWheel2.getVelocity()) / TicksPerRev;
-            double averageFlywheelRps = (measuredFlywheelRps1 + measuredFlywheelRps2) / 2.0;
-
-            robot.scoringMechanisms.flyWheel1.setVelocity(targetRPS * TicksPerRev);
-            robot.scoringMechanisms.flyWheel2.setVelocity(targetRPS * TicksPerRev);
-
-            telemetry.addLine("=== Shooter ===");
-            telemetry.addData("Flywheel1 RPS", "%5.2f", measuredFlywheelRps1);
-            telemetry.addData("Flywheel2 RPS", "%5.2f", measuredFlywheelRps2);
-            telemetry.addData("Avg RPS", "%5.2f", averageFlywheelRps);
-            telemetry.addData("Target RPS", "%5.2f", targetRPS);
-            telemetry.addData("Shooter Status", ((averageFlywheelRps >= (targetRPS - 1.0))) ? "READY" : "CHARGING");
-            telemetry.update();
-
-            if (averageFlywheelRps >= (targetRPS - 1.0)) {
-                break;
-            }
-
-            idle();
-        }
-    }
-
     private void aimAtTag(int desiredTagId) {
-        // Phase 1: Rotate to See Desired Tag
+        // ------------------------------
+        // Phase 1: Rotate until tag seen
+        // ------------------------------
         long searchStart = System.currentTimeMillis();
-        final long searchTimeOut = 3000;
+        final long searchTimeOut = 2500;  // 2.5 seconds
+
         while (opModeIsActive()) {
             LLResult result = robot.vision.limeLight.getLatestResult();
-            boolean hasTarget = result != null && result.isValid();
+            boolean hasCorrectTag = false;
             int tagId = -1;
 
-            if (hasTarget) {
+            if (result != null && result.isValid()) {
                 java.util.List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
                 if (fiducials != null && !fiducials.isEmpty()) {
                     tagId = fiducials.get(0).getFiducialId();
+                    hasCorrectTag = (tagId == desiredTagId);
                 }
             }
 
-            if (hasTarget && tagId == desiredTagId || System.currentTimeMillis() - searchStart > searchTimeOut) {
+            // Found desired tag or timed out searching
+            if (hasCorrectTag || System.currentTimeMillis() - searchStart > searchTimeOut) {
                 break;
             }
 
-            // Rotate Left Till Tag In View
+            // Rotate left until the correct tag appears in view
             robot.driveTrain.tankDrive(0.0, rotatePower);
 
+            telemetry.addLine("=== Aim Phase 1 ===");
+            telemetry.addData("Seen Tag ID", tagId);
+            telemetry.addData("Desired Tag ID", desiredTagId);
+            telemetry.update();
+
             idle();
         }
 
-        // Phase 2: AimBot
+        // Stop rotation before fine alignment
+        robot.driveTrain.tankDrive(0.0, 0.0);
+
+        // ------------------------------
+        // Phase 2: Fine alignment with tx
+        // ------------------------------
         long alignStart = System.currentTimeMillis();
-        final long alignmentTimeOut = 3000;
+        final long alignmentTimeOut = 3000;   // 3 seconds max
+        final long lostTagTimeOut   = 500;    // if we lose tag for >0.5s, give up
+
+        long lastSeenCorrectTagTime = System.currentTimeMillis();
+
         while (opModeIsActive()) {
+            long now = System.currentTimeMillis();
+
             LLResult result = robot.vision.limeLight.getLatestResult();
-            boolean hasTarget = result != null && result.isValid();
-            if (!hasTarget) {
-                robot.driveTrain.tankDrive(0.0, 0.0);
-                idle();
-                continue;
+            boolean hasCorrectTag = false;
+            double headingError = 0.0;
+
+            if (result != null && result.isValid()) {
+                java.util.List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
+                if (fiducials != null && !fiducials.isEmpty()) {
+                    LLResultTypes.FiducialResult fid = fiducials.get(0);
+                    int tagId = fid.getFiducialId();
+                    if (tagId == desiredTagId) {
+                        hasCorrectTag = true;
+                        headingError = result.getTx();
+                        lastSeenCorrectTagTime = now;
+                    }
+                }
             }
 
-            double headingError = result.getTx();
-            double rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
-
-            robot.driveTrain.tankDrive(0.0, rotate);
-
-            if (Math.abs(headingError) <= 1.0 || System.currentTimeMillis() - alignStart > alignmentTimeOut) {
+            // If we've lost the correct tag for too long, stop aiming
+            if (!hasCorrectTag && (now - lastSeenCorrectTagTime > lostTagTimeOut)) {
+                robot.driveTrain.tankDrive(0.0, 0.0);
+                telemetry.addLine("AimAtTag: Lost Tag - Stopping Aim");
+                telemetry.update();
                 break;
             }
 
+            // Timeout protection
+            if (now - alignStart > alignmentTimeOut) {
+                robot.driveTrain.tankDrive(0.0, 0.0);
+                telemetry.addLine("AimAtTag: Alignment Timeout");
+                telemetry.update();
+                break;
+            }
+
+            if (hasCorrectTag) {
+                // Proportional rotate based on heading error
+                double rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
+
+                // Tiny deadzone so we don't micro-oscillate
+                if (Math.abs(headingError) < 0.5) {
+                    rotate = 0.0;
+                }
+
+                robot.driveTrain.tankDrive(0.0, rotate);
+
+                telemetry.addLine("=== Aim Phase 2 ===");
+                telemetry.addData("Heading Error", headingError);
+                telemetry.addData("Rotate Cmd", rotate);
+                telemetry.update();
+
+                // Consider aligned when error is small
+                if (Math.abs(headingError) <= 1.0) {
+                    break;
+                }
+            } else {
+                // No correct tag right now, just hold still while we wait to see it again
+                robot.driveTrain.tankDrive(0.0, 0.0);
+            }
+
             idle();
         }
 
-        // Stop After Alignment
+        // Final stop after alignment attempt
         robot.driveTrain.tankDrive(0.0, 0.0);
     }
 
@@ -169,36 +207,69 @@ public class AutonRed extends LinearOpMode {
 
         switch (motif) {
             case "GPP":
-                fireRight();
-                fireLeft();
-                fireLeft();
+                fireRight(false);
+                fireLeft(false);
+                fireLeft(true);
                 break;
             case "PGP":
-                fireLeft();
-                fireRight();
-                fireLeft();
+                fireLeft(false);
+                fireRight(false);
+                fireLeft(true);
                 break;
             case "PPG":
+                fireLeft(false);
+                fireLeft(false);
+                fireRight(true);
+                break;
             default:
-                fireLeft();
-                fireLeft();
-                fireRight();
+                fireLeft(false);
+                fireLeft(false);
+                fireRight(true);
                 break;
         }
     }
 
-    private void fireLeft() {
-        final int gateOpenIterations = 15;
-        final int totalIterations = 90;
+    private void fireLeft(boolean activeIntake) {
+        long spinStart = System.currentTimeMillis();
+        final long spinTimeout = 2000;
 
-        for (int i = 0; opModeIsActive() && i < totalIterations; i++) {
+        while (opModeIsActive()) {
+            double rps1 = Math.abs(robot.scoringMechanisms.flyWheel1.getVelocity()) / TicksPerRev;
+            double rps2 = Math.abs(robot.scoringMechanisms.flyWheel2.getVelocity()) / TicksPerRev;
+            double avg = (rps1 + rps2) / 2.0;
+
             robot.scoringMechanisms.flyWheel1.setVelocity(targetRPS * TicksPerRev);
             robot.scoringMechanisms.flyWheel2.setVelocity(targetRPS * TicksPerRev);
 
-            robot.scoringMechanisms.rollerIntake.setPower(1.0);
-            robot.scoringMechanisms.sorterIntake.setPower(1.0);
+            if (avg >= (targetRPS - 1.0) || System.currentTimeMillis() - spinStart > spinTimeout) {
+                break;
+            }
 
-            if (i < gateOpenIterations) {
+            idle();
+        }
+
+        final long gateOpenDuration = 250;
+        final long shotDuration = 1500;
+
+        long startTime = System.currentTimeMillis();
+        long gateCloseTime = startTime + gateOpenDuration;
+        long shotEndTime = startTime + shotDuration;
+
+        while (opModeIsActive() && System.currentTimeMillis() < shotEndTime) {
+            long now = System.currentTimeMillis();
+
+            robot.scoringMechanisms.flyWheel1.setVelocity(targetRPS * TicksPerRev);
+            robot.scoringMechanisms.flyWheel2.setVelocity(targetRPS * TicksPerRev);
+
+            if (activeIntake) {
+                robot.scoringMechanisms.rollerIntake.setPower(1.0);
+                robot.scoringMechanisms.sorterIntake.setPower(1.0);
+            } else {
+                robot.scoringMechanisms.rollerIntake.setPower(0.0);
+                robot.scoringMechanisms.sorterIntake.setPower(0.0);
+            }
+
+            if (now < gateCloseTime) {
                 robot.scoringMechanisms.leftRelease.setPosition(artifactReleaseLeft);
             } else {
                 robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
@@ -214,23 +285,51 @@ public class AutonRed extends LinearOpMode {
         robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
     }
 
-    private void fireRight() {
-        final int gateOpenIterations = 15;
-        final int totalIterations = 90;
+    private void fireRight(boolean activeIntake) {
+        long spinStart = System.currentTimeMillis();
+        final long spinTimeout = 2000;
 
-        for (int i = 0; opModeIsActive() && i < totalIterations; i++) {
+        while (opModeIsActive()) {
+            double rps1 = Math.abs(robot.scoringMechanisms.flyWheel1.getVelocity()) / TicksPerRev;
+            double rps2 = Math.abs(robot.scoringMechanisms.flyWheel2.getVelocity()) / TicksPerRev;
+            double avg  = (rps1 + rps2) / 2.0;
+
             robot.scoringMechanisms.flyWheel1.setVelocity(targetRPS * TicksPerRev);
             robot.scoringMechanisms.flyWheel2.setVelocity(targetRPS * TicksPerRev);
 
-            robot.scoringMechanisms.rollerIntake.setPower(1.0);
-            robot.scoringMechanisms.sorterIntake.setPower(-1.0);
+            if (avg >= (targetRPS - 1.0) || System.currentTimeMillis() - spinStart > spinTimeout) {
+                break;
+            }
 
-            if (i < gateOpenIterations) {
+            idle();
+        }
+
+        final long gateOpenDuration = 250;
+        final long shotDuration     = 1500;
+
+        long startTime     = System.currentTimeMillis();
+        long gateCloseTime = startTime + gateOpenDuration;
+        long shotEndTime   = startTime + shotDuration;
+
+        while (opModeIsActive() && System.currentTimeMillis() < shotEndTime) {
+            long now = System.currentTimeMillis();
+
+            robot.scoringMechanisms.flyWheel1.setVelocity(targetRPS * TicksPerRev);
+            robot.scoringMechanisms.flyWheel2.setVelocity(targetRPS * TicksPerRev);
+
+            if (activeIntake) {
+                robot.scoringMechanisms.rollerIntake.setPower(1.0);
+                robot.scoringMechanisms.sorterIntake.setPower(-1.0);
+            } else {
+                robot.scoringMechanisms.rollerIntake.setPower(0.0);
+                robot.scoringMechanisms.sorterIntake.setPower(0.0);
+            }
+
+            if (now < gateCloseTime) {
                 robot.scoringMechanisms.rightRelease.setPosition(artifactReleaseRight);
             } else {
                 robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
             }
-
             robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
 
             idle();
