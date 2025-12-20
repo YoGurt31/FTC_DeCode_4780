@@ -71,14 +71,14 @@ public final class TankDrive {
                 RevHubOrientationOnRobot.UsbFacingDirection.UP;
 
         // drive model parameters
-        public double inPerTick = 96.0 / 47673.0;
-        public double trackWidthTicks = 3688.350404197826;
+        public double inPerTick = 0.00201; // 0.0020137185 / 0.0020043093 (120.0 / 59871.0)
+        public double trackWidthTicks = 3845.01599; // 3846.8432332953007 / 3847.721553149828 / 3840.4831717293746
 
         // TODO: TUNE THESE
         // feedforward parameters (in tick units)
-        public double kS = 1.3496539362782056;
-        public double kV = 0.00034097416123804735;
-        public double kA = 0.0;
+        public double kS = 0.036250; // 1.2061497592 // 1.11793776014403920000 / 1.21692901061033340000 / 1.2835825069945872000
+        public double kV = 0.000385; // 0.0003449171 // 0.00035134336865538253 / 0.00034410770649745523 / 0.0003393000973870097
+        public double kA = 0.0000000001; // 0.0000000000
 
         // path profile parameters (in inches)
         public double maxWheelVel = 50;
@@ -93,7 +93,6 @@ public final class TankDrive {
         public double ramseteZeta = 0.7; // in the range (0, 1)
         public double ramseteBBar = 2.0; // positive
 
-        // TODO: TUNE THESE
         // turn controller gains
         public double turnGain = 0.0;
         public double turnVelGain = 0.0;

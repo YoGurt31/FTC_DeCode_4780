@@ -44,7 +44,7 @@ public class TeleOpBasic extends LinearOpMode {
 
     // FlyWheel Variables
     private static double targetRPS = 0.0;
-    private static final double farTargetRPS = 53.5;
+    private static final double farTargetRPS = 54.5;
     private static final double closeTargetRPS = 48.5;
     private static final double TicksPerRev = 28.0;
     private final double artifactHoldRight = 0.5;
@@ -111,7 +111,7 @@ public class TeleOpBasic extends LinearOpMode {
                 rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
             } else {
                 drive = -gamepad1.left_stick_y;
-                rotate = -gamepad1.right_stick_x;
+                rotate = gamepad1.right_stick_x;
             }
 
             robot.driveTrain.tankDrive(drive, rotate);
