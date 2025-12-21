@@ -16,22 +16,9 @@ public class AutonBlue extends LinearOpMode {
     // Robot Instance
     private final Robot robot = new Robot();
 
-    // FlyWheel Variables
-    private static final double targetRPS = 57.5;
-    private static final double TicksPerRev = 28.0;
-    private final double artifactHoldRight = 0.5;
-    private final double artifactHoldLeft = 0.0;
-    private final double artifactReleaseRight = 1.0;
-    private final double artifactReleaseLeft = 0.5;
-
-    // AprilTag / Vision Variables
-    private static final double rotateGain = 0.0250;
-    private static final double maxRotate = 0.75;
-    private static final int redTargetId = 24;
-
     // Drive Constants
     private static final double drivePower = 0.25;
-    private static final double rotatePower = -0.10;
+    private static final double rotatePower = 0.10;
 
     // Non-Blocking Sleep
     private void waitSec(double sec) {
@@ -43,7 +30,7 @@ public class AutonBlue extends LinearOpMode {
     }
 
     private void chargeFlywheel() {
-        double targetTicksPerSec = targetRPS * TicksPerRev;
+        double targetTicksPerSec = robot.scoringMechanisms.targetRPS * robot.scoringMechanisms.TicksPerRev;
 
         robot.scoringMechanisms.flyWheel1.setVelocity(targetTicksPerSec);
         robot.scoringMechanisms.flyWheel2.setVelocity(targetTicksPerSec);
@@ -53,14 +40,14 @@ public class AutonBlue extends LinearOpMode {
 
         while (opModeIsActive() && timer.seconds() < 2.0) {
             double measuredRps =
-                    Math.abs(robot.scoringMechanisms.flyWheel1.getVelocity()) / TicksPerRev;
+                    Math.abs(robot.scoringMechanisms.flyWheel1.getVelocity()) / robot.scoringMechanisms.TicksPerRev;
 
             telemetry.addLine("=== Flywheel Charge ===");
             telemetry.addData("Flywheel RPS", measuredRps);
-            telemetry.addData("Target RPS", targetRPS);
+            telemetry.addData("Target RPS", robot.scoringMechanisms.targetRPS);
             telemetry.update();
 
-            if (measuredRps >= (targetRPS - 0.5)) {
+            if (measuredRps >= (robot.scoringMechanisms.targetRPS - 0.5)) {
                 break;
             }
             idle();
@@ -97,13 +84,13 @@ public class AutonBlue extends LinearOpMode {
         // Motif Detected or BackUp
         String motif = robot.vision.hasMotif() ? robot.vision.motifPattern : "GPP";
 
-        // Red PipeLine
-        robot.vision.setPipeline(robot.vision.RED);
+        // Blue PipeLine
+        robot.vision.setPipeline(robot.vision.BLUE);
 
         // TODO: Sequence
         robot.driveTrain.tankDrive(drivePower, 0);
         sleep(1000);
-        aimAtTag(redTargetId);
+        aimAtTag(20);
         chargeFlywheel();
         shootMotif(motif);
         sleep(1000);
@@ -188,7 +175,7 @@ public class AutonBlue extends LinearOpMode {
             }
 
             if (hasCorrectTag) {
-                double rotate = Range.clip(headingError * rotateGain, -maxRotate, maxRotate);
+                double rotate = Range.clip(headingError * robot.vision.rotateGain, -robot.vision.maxRotate, robot.vision.maxRotate);
 
                 if (Math.abs(headingError) < 1) {
                     rotate = 0.0;
@@ -246,9 +233,9 @@ public class AutonBlue extends LinearOpMode {
     }
 
     private void fireLeft() {
-        robot.scoringMechanisms.leftRelease.setPosition(artifactReleaseLeft);
+        robot.scoringMechanisms.leftRelease.setPosition(robot.scoringMechanisms.artifactReleaseLeft);
         waitSec(0.5);
-        robot.scoringMechanisms.leftRelease.setPosition(artifactHoldLeft);
+        robot.scoringMechanisms.leftRelease.setPosition(robot.scoringMechanisms.artifactHoldLeft);
         waitSec(0.25);
 
         robot.scoringMechanisms.rollerIntake.setPower(1.0);
@@ -260,9 +247,9 @@ public class AutonBlue extends LinearOpMode {
     }
 
     private void fireRight() {
-        robot.scoringMechanisms.rightRelease.setPosition(artifactReleaseRight);
+        robot.scoringMechanisms.rightRelease.setPosition(robot.scoringMechanisms.artifactReleaseRight);
         waitSec(0.5);
-        robot.scoringMechanisms.rightRelease.setPosition(artifactHoldRight);
+        robot.scoringMechanisms.rightRelease.setPosition(robot.scoringMechanisms.artifactHoldRight);
         waitSec(0.25);
 
         robot.scoringMechanisms.rollerIntake.setPower(1.0);

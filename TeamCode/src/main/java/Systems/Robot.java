@@ -32,7 +32,7 @@ public class Robot {
         // Hardware Devices
         public DcMotorEx frontLeft, frontRight, backLeft, backRight;
         public GoBildaPinpointDriver pinPoint;
-        public Servo gearShift;
+        public Servo gearShift1, gearShift2;
 
         public void init(HardwareMap hardwareMap) {
 
@@ -66,18 +66,21 @@ public class Robot {
             backLeft.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
             backRight.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
 
-//            // PinPoint Localizer
-//            pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-//            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-//            pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-//            pinPoint.setOffsets(-176, -66, DistanceUnit.MM);
-//            pinPoint.resetPosAndIMU();
-//            pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
+            // PinPoint Localizer
+            pinPoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+            pinPoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+            pinPoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+            pinPoint.setOffsets(-176, -66, DistanceUnit.MM);
+            pinPoint.resetPosAndIMU();
+            pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
 
 //            // GearShift SetUp
-//            gearShift = hardwareMap.get(Servo.class, "gearShift");
-//            gearShift.setDirection(Servo.Direction.FORWARD);
-//            gearShift.setPosition(0.0);
+//            gearShift1 = hardwareMap.get(Servo.class, "gearShift1");
+//            gearShift2 = hardwareMap.get(Servo.class, "gearShift2");
+//            gearShift1.setDirection(Servo.Direction.FORWARD);
+//            gearShift2.setDirection(Servo.Direction.FORWARD);
+//            gearShift1.setPosition(0.0);
+//            gearShift2.setPosition(0.0);
         }
 
         public void tankDrive(double Drive, double Rotate) {
@@ -103,6 +106,139 @@ public class Robot {
             frontRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
             backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
             backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        }
+
+        // Motion Functions
+        public void driveDistance(LinearOpMode opMode, double distanceInches, double power) {
+            if (opMode == null) return;
+            if (pinPoint == null) return;
+
+            double dir = Math.signum(distanceInches);
+            double drivePower = Math.abs(power) * dir;
+
+            if (Math.abs(distanceInches) < 1e-2 || Math.abs(power) < 1e-2) {
+                tankDrive(0.0, 0.0);
+                return;
+            }
+
+            pinPoint.update();
+            Pose2D start = pinPoint.getPosition();
+            double startX = start.getX(DistanceUnit.INCH);
+            double startY = start.getY(DistanceUnit.INCH);
+            double targetHeadingDeg = start.getHeading(AngleUnit.DEGREES);
+
+            final double headingKp = 0.02;
+            final double maxCorrection = 0.35;
+            final double threshold = 0.5;
+
+            while (opMode.opModeIsActive()) {
+                pinPoint.update();
+                Pose2D cur = pinPoint.getPosition();
+
+                double x = cur.getX(DistanceUnit.INCH);
+                double y = cur.getY(DistanceUnit.INCH);
+                double headingDeg = cur.getHeading(AngleUnit.DEGREES);
+
+                double dx = x - startX;
+                double dy = y - startY;
+                double traveled = Math.hypot(dx, dy);
+                double remaining = Math.abs(distanceInches) - traveled;
+
+                double headingErr = wrapDeg(targetHeadingDeg - headingDeg);
+                double correction = Range.clip(headingErr * headingKp, -maxCorrection, maxCorrection);
+
+                if (remaining <= threshold) break;
+
+                tankDrive(drivePower, correction);
+                opMode.idle();
+            }
+
+            tankDrive(0.0, 0.0);
+        }
+
+        public void turn(LinearOpMode opMode, String direction, double angleDeg) {
+            if (opMode == null) return;
+            if (pinPoint == null) return;
+
+            if (Math.abs(angleDeg) < 1e-2) {
+                tankDrive(0.0, 0.0);
+                return;
+            }
+
+            double dir;
+            if (direction == null) {
+                dir = 1.0;
+            } else {
+                String d = direction.trim().toLowerCase();
+                if (d.startsWith("l")) dir = 1.0;
+                else if (d.startsWith("r")) dir = -1.0;
+                else dir = 1.0;
+            }
+
+            pinPoint.update();
+            double startHeadingDeg = pinPoint.getPosition().getHeading(AngleUnit.DEGREES);
+            double targetHeadingDeg = wrapDeg(startHeadingDeg + dir * angleDeg);
+
+            final double turnKp = 0.05;
+            final double minRotate = 0.10;
+            final double maxRotate = 0.50;
+            final double threshold = 1.0;
+
+            while (opMode.opModeIsActive()) {
+                pinPoint.update();
+                double headingDeg = pinPoint.getPosition().getHeading(AngleUnit.DEGREES);
+                double err = wrapDeg(targetHeadingDeg - headingDeg);
+
+                if (Math.abs(err) <= threshold) break;
+
+                double rotate = Range.clip(err * turnKp, -maxRotate, maxRotate);
+
+                if (rotate > 0 && Math.abs(rotate) < minRotate) rotate = minRotate;
+                if (rotate < 0 && Math.abs(rotate) < minRotate) rotate = -minRotate;
+
+                tankDrive(0.0, rotate);
+                opMode.idle();
+            }
+
+            tankDrive(0.0, 0.0);
+        }
+
+        public void turnTo(LinearOpMode opMode, double headingDeg) {
+            if (opMode == null) return;
+            if (pinPoint == null) return;
+
+            pinPoint.update();
+            double targetHeadingDeg = wrapDeg(headingDeg);
+
+            final double turnKp = 0.05;
+            final double minRotate = 0.10;
+            final double maxRotate = 0.50;
+            final double thresholdDeg = 1.0;
+
+            while (opMode.opModeIsActive()) {
+                pinPoint.update();
+                double currentHeadingDeg = pinPoint.getPosition().getHeading(AngleUnit.DEGREES);
+
+                double errDeg = wrapDeg(targetHeadingDeg - currentHeadingDeg);
+
+                if (Math.abs(errDeg) <= thresholdDeg) break;
+
+                double rotate = Range.clip(errDeg * turnKp, -maxRotate, maxRotate);
+
+                if (rotate > 0 && Math.abs(rotate) < minRotate) rotate = minRotate;
+                if (rotate < 0 && Math.abs(rotate) < minRotate) rotate = -minRotate;
+
+                tankDrive(0.0, rotate);
+                opMode.idle();
+            }
+
+            tankDrive(0.0, 0.0);
+        }
+        
+        private static double wrapDeg(double deg) {
+            while (deg > 180.0) deg -= 360.0;
+            while (deg <= -180.0) deg += 360.0;
+            return deg;
         }
 
     }
@@ -148,6 +284,20 @@ public class Robot {
             leftRelease = hardwareMap.get(Servo.class, "lR");
             rightRelease = hardwareMap.get(Servo.class, "rR");
         }
+
+        // VARIABLES
+        public double targetRPS = 0.0;
+        public final double farTargetRPS = 54.5;
+        public final double closeTargetRPS = 48.5;
+        public final double TicksPerRev = 28.0;
+        public final double artifactHoldRight = 0.5;
+        public final double artifactHoldLeft = 0.0;
+        public final double artifactReleaseRight = 1.0;
+        public final double artifactReleaseLeft = 0.5;
+        public long leftShotEndTime = 0;
+        public long rightShotEndTime = 0;
+        public long leftGateOpenUntil = 0;
+        public long rightGateOpenUntil = 0;
     }
 
     public static class Vision {
@@ -171,29 +321,6 @@ public class Robot {
                     limeLight.pipelineSwitch(desiredPipeline);
                 } catch (Exception ignored) {}
             }
-        }
-
-        public void maintainPipeline() {
-            if (limeLight == null) return;
-            try {
-                int current = limeLight.getLatestResult().getPipelineIndex();
-                if (current != desiredPipeline) {
-                    limeLight.pipelineSwitch(desiredPipeline);
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        public void reboot() {
-            if (limeLight == null) return;
-            try {
-                limeLight.stop();
-            } catch (Exception ignored) {}
-
-            try {
-                limeLight.start();
-                limeLight.pipelineSwitch(desiredPipeline);
-            } catch (Exception ignored) {}
         }
 
         public void updateMotif() {
@@ -238,6 +365,11 @@ public class Robot {
         public boolean hasMotif() {
             return motifTagId == 21 || motifTagId == 22 || motifTagId == 23;
         }
+
+        // VARIABLES
+        public final double rotateGain = 0.0250;
+        public final double maxRotate = 0.75;
+        public final double tagAreaThreshold = 0.8;
     }
 
     // Created Instances of Subsystems

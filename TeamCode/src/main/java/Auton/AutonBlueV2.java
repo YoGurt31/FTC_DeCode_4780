@@ -10,8 +10,8 @@ import com.qualcomm.robotcore.util.Range;
 
 import Systems.Robot;
 
-@Autonomous(name = "AutoRed", group = "Auton")
-public class AutonRed extends LinearOpMode {
+@Autonomous(name = "AutoBlue2xMotif", group = "Auton")
+public class AutonBlueV2 extends LinearOpMode {
 
     // Robot Instance
     private final Robot robot = new Robot();
@@ -84,18 +84,17 @@ public class AutonRed extends LinearOpMode {
         // Motif Detected or BackUp
         String motif = robot.vision.hasMotif() ? robot.vision.motifPattern : "GPP";
 
-        // Red PipeLine
-        robot.vision.setPipeline(robot.vision.RED);
+        // Blue PipeLine
+        robot.vision.setPipeline(robot.vision.BLUE);
 
         // TODO: Sequence
-        robot.driveTrain.tankDrive(drivePower, 0);
-        sleep(1000);
-        aimAtTag(24);
+        robot.driveTrain.driveDistance(this, 12, drivePower);
+        aimAtTag(20);
         chargeFlywheel();
         shootMotif(motif);
         sleep(1000);
-        robot.driveTrain.tankDrive(drivePower, 0);
-        sleep(2000);
+        robot.driveTrain.turnTo(this, 0);
+        robot.driveTrain.driveDistance(this, 48, drivePower);
 
         // Shutdown
         robot.scoringMechanisms.flyWheel1.setPower(0.0);

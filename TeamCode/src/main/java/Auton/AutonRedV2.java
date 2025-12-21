@@ -10,8 +10,8 @@ import com.qualcomm.robotcore.util.Range;
 
 import Systems.Robot;
 
-@Autonomous(name = "AutoRed", group = "Auton")
-public class AutonRed extends LinearOpMode {
+@Autonomous(name = "AutoRed2xMotif", group = "Auton")
+public class AutonRedV2 extends LinearOpMode {
 
     // Robot Instance
     private final Robot robot = new Robot();
@@ -88,14 +88,13 @@ public class AutonRed extends LinearOpMode {
         robot.vision.setPipeline(robot.vision.RED);
 
         // TODO: Sequence
-        robot.driveTrain.tankDrive(drivePower, 0);
-        sleep(1000);
+        robot.driveTrain.driveDistance(this, 12, drivePower);
         aimAtTag(24);
         chargeFlywheel();
         shootMotif(motif);
         sleep(1000);
-        robot.driveTrain.tankDrive(drivePower, 0);
-        sleep(2000);
+        robot.driveTrain.turnTo(this, 0);
+        robot.driveTrain.driveDistance(this, 48, drivePower);
 
         // Shutdown
         robot.scoringMechanisms.flyWheel1.setPower(0.0);

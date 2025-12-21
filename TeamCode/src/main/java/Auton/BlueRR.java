@@ -86,7 +86,7 @@ public class BlueRR extends LinearOpMode {
         // Active If Using LimeLight
         FtcDashboard.getInstance().startCameraStream(robot.vision.limeLight, 30);
         robot.vision.limeLight.setPollRateHz(30);
-        robot.vision.limeLight.pipelineSwitch(0); // pipeline 0 for motif scanning
+        robot.vision.limeLight.pipelineSwitch(0);
 
         telemetry.addLine("Status: Initialized");
         telemetry.addLine("PreLoad Order: L - 2 Purple | R - 1 Green");
