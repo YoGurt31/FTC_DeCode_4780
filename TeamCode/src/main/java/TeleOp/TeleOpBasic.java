@@ -7,6 +7,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
 import Systems.Robot;
 
 /**
@@ -23,10 +26,10 @@ import Systems.Robot;
  * - Left Trigger:       AimBot
  * - Right Bumper:       Activate Intake + Sort to Right Side
  * - Right Trigger:      Charge FlyWheel
- * - DPad Up:            Elevate Robot Up
- * - DPad Down:          Elevate Robot Down
- * - DPad Left:          Shift Motors To Elevator
- * - DPad Right:         Shift Motors To DriveTrain
+ * - DPad Up:            GearShift
+ * - DPad Down:          GearShift
+ * - DPad Left:          GearShift
+ * - DPad Right:         GearShift
  * - FaceButton Up:      Shoot Left Side
  * - FaceButton Down:    Returns Function
  * - FaceButton Left:    Returns Function
@@ -166,14 +169,19 @@ public class TeleOpBasic extends LinearOpMode {
             robot.scoringMechanisms.leftRelease.setPosition(now < robot.scoringMechanisms.leftGateOpenUntil ? robot.scoringMechanisms.artifactReleaseLeft : robot.scoringMechanisms.artifactHoldLeft);
             robot.scoringMechanisms.rightRelease.setPosition(now < robot.scoringMechanisms.rightGateOpenUntil ? robot.scoringMechanisms.artifactReleaseRight : robot.scoringMechanisms.artifactHoldRight);
 
-            // TODO: GearShifter / Elevator Controller
+            // GearShifter / Elevator Controller
+            if (gamepad1.share && gamepad1.options) {
+                robot.driveTrain.gearShift.setPosition(0.55);
+                robot.driveTrain.elevatorLeft.setPosition(1.0);
+                robot.driveTrain.elevatorRight.setPosition(0.0);
+            }
 
             if (now - lastTelemetryUpdate >= telemetryInterval) {
                 // Drive / AimBot
                 telemetry.addLine("=== Drive + AimBot ===");
-//                telemetry.addData("X Pos", "%5.2f", robot.driveTrain.pinPoint.getPosition().getX(DistanceUnit.INCH));
-//                telemetry.addData("Y Pos", "%5.2f", robot.driveTrain.pinPoint.getPosition().getY(DistanceUnit.INCH));
-//                telemetry.addData("Angle", "%5.2f", robot.driveTrain.pinPoint.getPosition().getHeading(AngleUnit.DEGREES));
+                telemetry.addData("X Pos", "%5.2f", robot.driveTrain.pinPoint.getPosition().getX(DistanceUnit.INCH));
+                telemetry.addData("Y Pos", "%5.2f", robot.driveTrain.pinPoint.getPosition().getY(DistanceUnit.INCH));
+                telemetry.addData("Angle", "%5.2f", robot.driveTrain.pinPoint.getPosition().getHeading(AngleUnit.DEGREES));
                 telemetry.addData("AimBot Active", activeTargeting && hasTarget);
                 telemetry.addData("Tag In View", hasTarget);
                 telemetry.addData("Tag Area", hasTarget ? result.getTa() : 0.0);
@@ -205,11 +213,15 @@ public class TeleOpBasic extends LinearOpMode {
                 telemetry.addData("Shooter Status", ((averageFlywheelRps >= (robot.scoringMechanisms.targetRPS - 1.0)) && (gamepad1.right_trigger >= 0.05)) ? "READY" : "CHARGING");
                 telemetry.addData("Left Gate", (now < robot.scoringMechanisms.leftGateOpenUntil) ? "Open" : "Closed");
                 telemetry.addData("Right Gate", (now < robot.scoringMechanisms.rightGateOpenUntil) ? "Open" : "Closed");
+                telemetry.addLine();
 
-                // Intake / Sorter
-//            telemetry.addLine("=== GearShifter ===");
-//            telemetry.addData("Shifted To", robot.driveTrain.gearShift.getPosition() == 0.0 ? "DriveTrain" : "Elevator");
-//            telemetry.addLine();
+                // Gearshift / Elevator
+                telemetry.addLine("=== GearShifter ===");
+                telemetry.addData("Shifted To", robot.driveTrain.gearShift.getPosition() == 0.0 ? "DriveTrain" : "Elevator");
+                telemetry.addData("GearShift Position", robot.driveTrain.gearShift.getPosition());
+                telemetry.addData("Left Elevator Position", robot.driveTrain.elevatorLeft.getPosition());
+                telemetry.addData("Right Elevator Position", robot.driveTrain.elevatorRight.getPosition());
+                telemetry.addLine();
 
                 telemetry.update();
                 lastTelemetryUpdate = now;

@@ -10,7 +10,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.ServoController;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -32,7 +31,7 @@ public class Robot {
         // Hardware Devices
         public DcMotorEx frontLeft, frontRight, backLeft, backRight;
         public GoBildaPinpointDriver pinPoint;
-        public Servo gearShift1, gearShift2;
+        public Servo gearShift, elevatorLeft, elevatorRight;
 
         public void init(HardwareMap hardwareMap) {
 
@@ -74,13 +73,16 @@ public class Robot {
             pinPoint.resetPosAndIMU();
             pinPoint.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
 
-//            // GearShift SetUp
-//            gearShift1 = hardwareMap.get(Servo.class, "gearShift1");
-//            gearShift2 = hardwareMap.get(Servo.class, "gearShift2");
-//            gearShift1.setDirection(Servo.Direction.FORWARD);
-//            gearShift2.setDirection(Servo.Direction.FORWARD);
-//            gearShift1.setPosition(0.0);
-//            gearShift2.setPosition(0.0);
+            // GearShift SetUp
+            gearShift = hardwareMap.get(Servo.class, "gS");
+            elevatorLeft = hardwareMap.get(Servo.class, "eL");
+            elevatorRight = hardwareMap.get(Servo.class, "eR");
+            gearShift.setDirection(Servo.Direction.FORWARD);
+            elevatorLeft.setDirection(Servo.Direction.FORWARD);
+            elevatorRight.setDirection(Servo.Direction.FORWARD);
+            gearShift.setPosition(0.5);
+            elevatorLeft.setPosition(0.5);
+            elevatorRight.setPosition(0.5);
         }
 
         public void tankDrive(double Drive, double Rotate) {
@@ -262,7 +264,7 @@ public class Robot {
             sorterIntake.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
             sorterIntake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
-            double F = 14.385;
+            double F = 17.75;
             double P = 2 * F;
             double I = 00.000;
             double D = 00.000;
@@ -287,8 +289,8 @@ public class Robot {
 
         // VARIABLES
         public double targetRPS = 0.0;
-        public final double farTargetRPS = 54.5;
-        public final double closeTargetRPS = 48.5;
+        public final double farTargetRPS = 55;
+        public final double closeTargetRPS = 50;
         public final double TicksPerRev = 28.0;
         public final double artifactHoldRight = 0.5;
         public final double artifactHoldLeft = 0.0;

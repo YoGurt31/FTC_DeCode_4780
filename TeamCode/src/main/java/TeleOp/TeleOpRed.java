@@ -127,6 +127,13 @@ public class TeleOpRed extends LinearOpMode {
 
             robot.scoringMechanisms.leftRelease.setPosition(now < robot.scoringMechanisms.leftGateOpenUntil ? robot.scoringMechanisms.artifactReleaseLeft : robot.scoringMechanisms.artifactHoldLeft);
             robot.scoringMechanisms.rightRelease.setPosition(now < robot.scoringMechanisms.rightGateOpenUntil ? robot.scoringMechanisms.artifactReleaseRight : robot.scoringMechanisms.artifactHoldRight);
+
+            // GearShifter / Elevator Controller
+            if (gamepad1.share && gamepad1.options) {
+                robot.driveTrain.gearShift.setPosition(0.55);
+                robot.driveTrain.elevatorLeft.setPosition(1.0);
+                robot.driveTrain.elevatorRight.setPosition(0.0);
+            }
         }
         robot.vision.limeLight.stop();
     }
