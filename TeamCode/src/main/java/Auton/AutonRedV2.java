@@ -63,28 +63,41 @@ public class AutonRedV2 extends LinearOpMode {
         robot.vision.setPipeline(robot.vision.RED);
 
         // TODO: Sequence
-        robot.driveTrain.driveDistance(this, 6, drivePower);
+        robot.driveTrain.driveDistance(this, 4, drivePower);
         chargeFlywheel();
-        aimAtTag(24);
-        waitUntilReady(2.5);
+        robot.driveTrain.turnTo(this, -24);
+        waitSec(1.5);
         shootMotif(motif);
         stopFlywheel();
-        robot.driveTrain.driveDistance(this, 12, drivePower);
-        robot.driveTrain.turnTo(this, 90);
-        robot.driveTrain.driveDistance(this, -36, drivePower);
-        intakeRight();
-        sleep(2500);
+        robot.driveTrain.driveDistance(this, 2, drivePower);
+        robot.driveTrain.turnTo(this, -282);
+        robot.driveTrain.driveDistance(this, -42, drivePower);
+        //intaking corner ball 1
         intakeLeft();
-        sleep(5000);
-        robot.driveTrain.driveDistance(this, 36, drivePower);
+        waitSec(0.7);
         stopIntake();
+        //ball 2
+        intakeRight();
+        waitSec(1);
+        stopIntake();
+        //ball 3
+        robot.driveTrain.turnTo(this, -345);
+        robot.driveTrain.driveDistance(this, -4.8, drivePower);
         robot.driveTrain.turnTo(this, 0);
-        robot.driveTrain.driveDistance(this, -12, drivePower);
+        intakeLeft();
+        waitSec(1.5);
+        stopIntake();
+        //go back and shoot
+        robot.driveTrain.driveDistance(this, 4, drivePower);
+        robot.driveTrain.turnTo(this, -270);
+        robot.driveTrain.driveDistance(this, 40, drivePower);
+        stopIntake();
         chargeFlywheel();
-        aimAtTag(24);
-        waitUntilReady(2.5);
+        robot.driveTrain.turnTo(this, -24);
+        waitSec(1.5);
         shootMotif(motif);
         stopFlywheel();
+        robot.driveTrain.driveDistance(this, 4, drivePower);
 
         // Shutdown
         robot.scoringMechanisms.flyWheel1.setPower(0.0);
